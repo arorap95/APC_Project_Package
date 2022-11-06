@@ -37,8 +37,14 @@ class GetFred:
             7: lambda l: (l / l.shift(1) - 1).diff(),
         }
 
-    def get_fredmd(self, freq: str = "monthly") -> pd.DataFrame:
-        raw_df = self._get_file(freq="monthly")
+    def get_fred_md(self) -> pd.DataFrame:
+        return self._get_fred("monthly")
+
+    def get_fred_qd(self) -> pd.DataFrame:
+        return self._get_fred("quarterly")
+
+    def _get_fred(self, freq: str = "monthly"):
+        raw_df = self._get_file(freq=freq)
         df, transf_codes = self._clean_df(raw_df)
         if self.transform:
             df = self._stationarize(df, transf_codes)
