@@ -3,7 +3,7 @@ import numpy as np
 from urllib import request
 import datetime
 import warnings
-from typing import Union
+from typing import Union, Tuple
 
 
 class GetFred:
@@ -20,6 +20,10 @@ class GetFred:
         :param start_date: start date for data
         :param end_date: end date for data
         :param vintage: which version of the file to look at; 'current' uses the latest one
+
+        Main functions are:
+        :param get_fred_md(): pulls FRED MD data
+        :param get_fred_qd(): pulls FRED QD data
         """
         self.transform = transform
         self.start_date = start_date
@@ -42,22 +46,33 @@ class GetFred:
         Returns FRED-MD data per class parameters specified by user.
         :return: Pandas DataFrame
         """
-        return self._get_fred("monthly")
-
-    def get_fred_qd(self) -> pd.DataFrame:
-        """
-        Returns FRED-QD data per class parameters specified by user.
-        :return: Pandas DataFrame
-        """
-        return self._get_fred("quarterly")
-
-    def _get_fred(self, freq: str = "monthly"):
-        raw_df = self._get_file(freq=freq)
-        df, transf_codes = self._clean_df(raw_df)
+        raw_df = self._get_file(freq="monthly")
+        df, transf_codes = self._clean_md(raw_df)
         if self.transform:
             df = self._stationarize(df, transf_codes)
         df = self._filter_dates(df)
         return df
+
+    def get_fred_qd(
+        self, interpolate_to_monthly: bool = False, return_factors: bool = False
+    ) -> Union[Tuple[pd.DataFrame, pd.Series], pd.DataFrame]:
+        """
+        Returns FRED-QD data per class parameters specified by user.
+        :param interpolate_to_monthly: interpolate quarterly results to monthly to match FRED-MD
+        :param return_factors: return variable factors as a separate object
+        :return: Pandas DataFrame
+        """
+        raw_df = self._get_file(freq="quarterly")
+        df, transf_codes, factors = self._clean_qd(raw_df)
+        if self.transform:
+            df = self._stationarize(df, transf_codes)
+        df = self._filter_dates(df)
+        if interpolate_to_monthly:
+            df = df.resample("MS").interpolate()
+        if return_factors:
+            return df, factors
+        else:
+            return df
 
     def _stationarize(self, df: pd.DataFrame, transf_codes: pd.Series) -> pd.DataFrame:
         df_trans = []
@@ -67,20 +82,33 @@ class GetFred:
         df_trans = pd.DataFrame(df_trans).T.dropna(how="all")
         return df_trans
 
-    def _clean_df(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+    def _clean_qd(
+        self, raw_df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+        factors = raw_df.iloc[0, 1:]
+        transf_codes = raw_df.iloc[1, 1:]
+        df = raw_df.iloc[2:, 0:]
+        df = self._clean_df(df)
+        return df, transf_codes, factors
+
+    def _clean_md(self, raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Return a cleaned dataframe with transformation codes taken out and a nice
-        indexed date.
+        indexed date. Applicable to FRED-MD since QD has "factors".
         :param raw_df: Pandas Dataframe based on the raw pull of FRED data
         :return: a cleaned Pandas DataFrame
         """
         transf_codes = raw_df.iloc[0, 1:]
         df = raw_df.iloc[1:, 0:]
-        df = df.dropna(how="all")  # drop any rows where ALL are NaN
+        df = self._clean_df(df)
+        return df, transf_codes
+
+    def _clean_df(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+        df = raw_df.dropna(how="all")  # drop any rows where ALL are NaN
         df = df.rename(columns={"sasdate": "date"})
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date")
-        return df, transf_codes
+        return df
 
     def _get_file(self, freq: str = "monthly") -> pd.DataFrame:
         """
