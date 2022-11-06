@@ -10,8 +10,8 @@ class GetFred:
     def __init__(
         self,
         transform: bool = True,
-        start_date: Union[datetime, None] = None,
-        end_date: Union[datetime, None] = None,
+        start_date: Union[datetime.datetime, None] = None,
+        end_date: Union[datetime.datetime, None] = None,
         vintage: str = "current",
     ):
         """
@@ -38,9 +38,17 @@ class GetFred:
         }
 
     def get_fred_md(self) -> pd.DataFrame:
+        """
+        Returns FRED-MD data per class parameters specified by user.
+        :return: Pandas DataFrame
+        """
         return self._get_fred("monthly")
 
     def get_fred_qd(self) -> pd.DataFrame:
+        """
+        Returns FRED-QD data per class parameters specified by user.
+        :return: Pandas DataFrame
+        """
         return self._get_fred("quarterly")
 
     def _get_fred(self, freq: str = "monthly"):
@@ -48,6 +56,7 @@ class GetFred:
         df, transf_codes = self._clean_df(raw_df)
         if self.transform:
             df = self._stationarize(df, transf_codes)
+        df = self._filter_dates(df)
         return df
 
     def _stationarize(self, df: pd.DataFrame, transf_codes: pd.Series) -> pd.DataFrame:
@@ -86,12 +95,10 @@ class GetFred:
     def _filter_dates(
         self,
         df: pd.DataFrame,
-        start_date: Union[datetime, None],
-        end_date: Union[datetime, None],
     ) -> pd.DataFrame:
-        if start_date:
+        if self.start_date:
             df = df.loc[self.start_date :]
-        if end_date:
+        if self.end_date:
             df = df.loc[self.end_date :]
         return df
 
