@@ -25,12 +25,9 @@ class GetFred:
         :param freq: 'monthly' or 'quarterly'
         :return: Pandas DataFrame with raw results
         """
-        if freq not in ["monthly", "quarterly"]:
-            raise Exception(f"Invalid frequency: {freq}. Must be monthly or quarterly.")
-
         url = f"{self.url_format}/{freq}/{self.vintage}.csv"
-        response = request.urlopen(url)
-        csv = response.read()
+        df = pd.read_csv(url)
+        return df
 
     def _check_vintage(self):
         """
