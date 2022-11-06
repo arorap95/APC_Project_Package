@@ -11,13 +11,50 @@ class GetFred:
     Pull FRED-MD or FRED-QD data
     """
 
-    def __init__(self, vintage="current"):
+    def __init__(self, transform=True, vintage="current"):
+        self.transform = transform
         self.vintage = vintage  # if not default "current" MUST be YYYY-MM
         self._check_vintage()
         self.url_format = "https://files.stlouisfed.org/files/htdocs/fred-md/"
+        self.stationarity_functions = {
+            1: lambda l: l,
+            2: lambda l: l.diff(),
+            3: lambda l: l.diff().diff(),
+            4: lambda l: np.log(l),
+            5: lambda l: np.log(l).diff(),
+            6: lambda l: np.log(l).diff().diff(),
+            7: lambda l: (l / l.shift(1) - 1).diff(),
+        }
 
     def get_fredmd(self):
-        df = self._get_file(freq="monthly")
+        raw_df = self._get_file(freq="monthly")
+        df, transf_codes = self._clean_df(raw_df)
+        if self.transform:
+            df = self._stationarize(df, transf_codes)
+        return df
+
+    def _stationarize(self, df, transf_codes):
+        df_trans = []
+        for s in range(df.shape[1]):  # perform transformations
+            s_trans = self.stationarity_functions[transf_codes[s]](df.iloc[:, s])
+            df_trans.append(s_trans)
+        df_trans = pd.DataFrame(df_trans).T.dropna(how="all")
+        return df_trans
+
+    def _clean_df(self, raw_df):
+        """
+        Return a cleaned dataframe with transformation codes taken out and a nice
+        indexed date.
+        :param raw_df: Pandas Dataframe based on the raw pull of FRED data
+        :return: a cleaned Pandas DataFrame
+        """
+        transf_codes = raw_df.iloc[0, 1:]
+        df = raw_df.iloc[1:, 0:]
+        df = df.dropna(how="all")  # drop any rows where ALL are NaN
+        df = df.rename(columns={"sasdate": "date"})
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date")
+        return df, transf_codes
 
     def _get_file(self, freq="monthly"):
         """
