@@ -64,7 +64,7 @@ class GetFred:
         """
         raw_df = self._get_file(freq="quarterly")
         df, transf_codes, factors = self._clean_qd(raw_df)
-        if interpolate_to_monthly: # include BEFORE stationarizing
+        if interpolate_to_monthly:  # include BEFORE stationarizing
             df = df.resample("MS").interpolate()
         if self.transform:
             df = self._stationarize(df, transf_codes)
@@ -150,9 +150,9 @@ class GetFred:
         :return: Pandas DataFrame
         """
         if self.start_date:
-            df = df.loc[self.start_date:]
+            df = df.loc[self.start_date :]
         if self.end_date:
-            df = df.loc[:self.end_date]
+            df = df.loc[: self.end_date]
         return df
 
     def _check_vintage(self):
@@ -176,7 +176,7 @@ class GetFred:
             try:
                 year, mon = self.vintage.split("-")
             except ValueError:
-                raise Exception(f'Invalid vintage: {self.vintage}. Format YYYY-MM')
+                raise Exception(f"Invalid vintage: {self.vintage}. Format YYYY-MM")
             if (int(year) < 2015) or (int(year) > datetime.date.today().year):
                 raise Exception(f"Invalid year: {year}. Format YYYY-MM.")
             if (int(mon) > 12) or (int(mon) < 1):
