@@ -16,7 +16,7 @@ class GetFred:
     ):
         """
         Pull FRED-MD or FRED-QD data. Returns a Pandas DataFrame of golden copy FRED data.
-        :param transform: transform to stationarity
+        :param transform: stationarize using FRED-recommended transformations
         :param start_date: start date for data
         :param end_date: end date for data
         :param vintage: which version of the file to look at; 'current' uses the latest one
@@ -64,17 +64,24 @@ class GetFred:
         """
         raw_df = self._get_file(freq="quarterly")
         df, transf_codes, factors = self._clean_qd(raw_df)
+        if interpolate_to_monthly: # include BEFORE stationarizing
+            df = df.resample("MS").interpolate()
         if self.transform:
             df = self._stationarize(df, transf_codes)
         df = self._filter_dates(df)
-        if interpolate_to_monthly:
-            df = df.resample("MS").interpolate()
         if return_factors:
             return df, factors
         else:
             return df
 
     def _stationarize(self, df: pd.DataFrame, transf_codes: pd.Series) -> pd.DataFrame:
+        """
+        Uses the FRED-recommended transformation codes to transform each column to stationarity.
+        See self.stationarity_functions for the actual transformations.
+        :param df: input raw Pandas DataFrame
+        :param transf_codes: the code corresponding to the proper function to stationarize a given series
+        :return: stationarized Pandas DataFrame
+        """
         df_trans = []
         for s in range(df.shape[1]):  # perform transformations
             s_trans = self.stationarity_functions[transf_codes[s]](df.iloc[:, s])
@@ -85,6 +92,13 @@ class GetFred:
     def _clean_qd(
         self, raw_df: pd.DataFrame
     ) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+        """
+        Return a cleaned dataframe with transformation codes and factors taken out and a nice
+        indexed date; return transformation codes and factors separately.
+        Applicable to FRED-QD since QD has "factors" in addition to transformation codes.
+        :param raw_df: Pandas Dataframe based on the raw pull of FRED-QD data
+        :return: a cleaned Pandas DataFrame, Pandas Series of transformation codes, Pandas Series of factors
+        """
         factors = raw_df.iloc[0, 1:]
         transf_codes = raw_df.iloc[1, 1:]
         df = raw_df.iloc[2:, 0:]
@@ -94,9 +108,9 @@ class GetFred:
     def _clean_md(self, raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Return a cleaned dataframe with transformation codes taken out and a nice
-        indexed date. Applicable to FRED-MD since QD has "factors".
-        :param raw_df: Pandas Dataframe based on the raw pull of FRED data
-        :return: a cleaned Pandas DataFrame
+        indexed date and returns transformation codes separately. Applicable to FRED-MD since QD has "factors".
+        :param raw_df: Pandas Dataframe based on the raw pull of FRED-MD data
+        :return: a cleaned Pandas DataFrame, Pandas Series of transformation codes
         """
         transf_codes = raw_df.iloc[0, 1:]
         df = raw_df.iloc[1:, 0:]
@@ -104,6 +118,11 @@ class GetFred:
         return df, transf_codes
 
     def _clean_df(self, raw_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        General dataframe cleaner across MD and QD.
+        :param raw_df: Pandas DataFrame to be cleaned
+        :return: cleaned Pandas DataFrame
+        """
         df = raw_df.dropna(how="all")  # drop any rows where ALL are NaN
         df = df.rename(columns={"sasdate": "date"})
         df["date"] = pd.to_datetime(df["date"])
@@ -124,10 +143,16 @@ class GetFred:
         self,
         df: pd.DataFrame,
     ) -> pd.DataFrame:
+        """
+        If ``start_date`` and/or ``end_date`` specified will filter the dataframe
+        to be within these dates. Otherwise returns the same dataframe.
+        :param df: Pandas DataFrame with Datetime Index
+        :return: Pandas DataFrame
+        """
         if self.start_date:
-            df = df.loc[self.start_date :]
+            df = df.loc[self.start_date:]
         if self.end_date:
-            df = df.loc[self.end_date :]
+            df = df.loc[:self.end_date]
         return df
 
     def _check_vintage(self):
@@ -148,13 +173,16 @@ class GetFred:
                 raise Exception(
                     f"Incorrect vintage format: {self.vintage}. Correct format: YYYY-MM"
                 )
-            year, mon = self.vintage.split("-")
-            if (year < 2015) or (year > datetime.date.today().year):
+            try:
+                year, mon = self.vintage.split("-")
+            except ValueError:
+                raise Exception(f'Invalid vintage: {self.vintage}. Format YYYY-MM')
+            if (int(year) < 2015) or (int(year) > datetime.date.today().year):
                 raise Exception(f"Invalid year: {year}. Format YYYY-MM.")
-            if (mon > 12) or (mon < 1):
+            if (int(mon) > 12) or (int(mon) < 1):
                 raise Exception(f"Invalid month: {mon}. Format YYYY-MM")
-            if (year == datetime.date.today().year) and (
-                mon > datetime.date.today().month
+            if (int(year) == datetime.date.today().year) and (
+                int(mon) > datetime.date.today().month
             ):
                 raise Exception(
                     f"Vintage {self.vintage} too far into the future. Request vintage=current for latest data"
