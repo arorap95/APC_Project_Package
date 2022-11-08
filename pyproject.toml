@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "integrator"
+name = "golden_fred"
 version = "0.0.1"
 dependencies = [
     "numpy",
