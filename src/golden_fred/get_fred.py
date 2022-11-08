@@ -146,6 +146,8 @@ class GetFred:
         """
         If ``start_date`` and/or ``end_date`` specified will filter the dataframe
         to be within these dates. Otherwise returns the same dataframe.
+        If the end date is chosen to be early, some columns could have all NA;
+        the function leaves them in and warns the user.
         :param df: Pandas DataFrame with Datetime Index
         :return: Pandas DataFrame
         """
