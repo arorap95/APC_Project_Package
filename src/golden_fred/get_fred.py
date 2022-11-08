@@ -158,7 +158,7 @@ class GetFred:
         all_zero_cols = df.columns[df.isnull().all()].to_list()
         if all_zero_cols:
             warnings.warn(
-                f"""The following columns have only NaN values: {','.join(all_zero_cols)}. 
+                f"""The following columns have only NaN values: {','.join(all_zero_cols)}.
                               See FRED-MD/QD documentation for more details; some series begin later than others."""
             )
         return df
