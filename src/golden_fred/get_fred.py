@@ -153,6 +153,12 @@ class GetFred:
             df = df.loc[self.start_date :]
         if self.end_date:
             df = df.loc[: self.end_date]
+        all_zero_cols = df.columns[df.isnull().all()].to_list()
+        if all_zero_cols:
+            warnings.warn(
+                f"""The following columns have only NaN values: {','.join(all_zero_cols)}. 
+                              See FRED-MD/QD documentation for more details; some series begin later than others."""
+            )
         return df
 
     def _check_vintage(self):
