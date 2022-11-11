@@ -1,2 +1,2 @@
-# se-for-sci-example
-In class
+# APC 524 Project 
+Alex, Poorva, Sneha
