@@ -1,4 +1,3 @@
-import golden_fred
 from golden_fred import fred_factors
 import pytest
 import random
