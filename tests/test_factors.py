@@ -1,4 +1,4 @@
-from goldenfred import FredFactors
+from golden_fred import FredFactors
 import pytest
 import random
 import numpy as np
