@@ -72,20 +72,27 @@ class GetFred:
             },
         }
 
-    def get_fred_md(self) -> pd.DataFrame:
+    def get_fred_md(self,group_no: Union[list,None]) -> pd.DataFrame:
         """
         Returns FRED-MD data per class parameters specified by user.
+        :param: group_no (list or None): indicates a specific group or groups to filter for
         :return: Pandas DataFrame
         """
         raw_df = self._get_file(freq="monthly")
         df, transf_codes = self._clean_md(raw_df)
         if self.transform:
             df = self._stationarize(df, transf_codes)
+        if group_no:
+            lookup = self.get_appendix(freq="monthly")
+            group_names = {k:v for k,v in self.group_lookup['FRED-MD'].items() if k in group_no}
+            warnings.warn(f'''Filtering for group(s) {group_names} as specified by user...''')
+            vars = lookup.loc[lookup['group'].isin(group_no),'fred'].to_list()
+            df = df.iloc[:,df.columns.isin(vars)]
         df = self._filter_dates(df)
         return df
 
     def get_fred_qd(
-        self, interpolate_to_monthly: bool = False, return_factors: bool = False
+        self, group_no: Union[list,None], interpolate_to_monthly: bool = False, return_factors: bool = False
     ) -> Union[Tuple[pd.DataFrame, pd.Series], pd.DataFrame]:
         """
         Returns FRED-QD data per class parameters specified by user.
@@ -99,13 +106,38 @@ class GetFred:
             df = df.resample("MS").interpolate()
         if self.transform:
             df = self._stationarize(df, transf_codes)
+        if group_no:
+            warnings.warn(f'''Recall that FRED-QD has different groups than FRED-MD. See get_appendix(freq='quarterly') for details)''')
+            lookup = self.get_appendix(freq="quarterly")
+            group_names = {k:v for k,v in self.group_lookup['FRED-QD'].items() if k in group_no}
+            warnings.warn(f'''Filtering for group(s) {group_names} as specified by user...''')
+            vars = lookup.loc[lookup['Group'].isin(group_no),'FRED MNEMONIC'].to_list()
+            df = df.iloc[:,df.columns.isin(vars)]
         df = self._filter_dates(df)
         if return_factors:
             return df, factors
         else:
             return df
 
-    def get_appendix(self, freq: str = "monthly", add_group_names: bool = True):
+    def combine_fred(self,interpolate: bool = True, fred_md_group = Union[list,None],fred_qd_group=Union[list,None]):
+        """
+        Returns a combined monthly-quarterly panel (with the default of interpolating quarterly to monthly)
+        based on user-specific groups, or a custom methodology. Interpolates by default.
+        :param fred_md_group: group numbers from FRED-MD to include
+        :param fred_qd_group: group numbers from FRED-QD to include
+        :return: a monthly pandas DataFrame with the series together
+        """
+        warnings.warn(f"""FRED-MD and FRED-QD have duplicates (or transformed versions of the same series).
+                          combine_fred() removes only obvious duplicates from FRED-QD (prioritizing FRED-MD).""")
+        if not fred_md_group and not fred_qd_group:
+            warnings.warn(f"""No groups for FRED-MD or FRED-QD defined. Taking all variables from both and taking out only obvious duplicates.
+                              Check output to ensure it is as you wish.""" )
+        md_df = self.get_fred_md(group_no=fred_md_group)
+        qd_df = self.get_fred_qd(group_no=fred_qd_group,interpolate_to_monthly=interpolate)
+        df = self._find_duplicates(fred_md_df=md_df,fred_qd_df=qd_df)
+        return df
+
+    def get_appendix(self, freq: str = "monthly", add_group_names: bool = True) -> pd.DataFrame:
         """
         This is useful for getting group lookups; you get a direct lookup from variable names to groups this way,
         and Stock-Watson lookup information.
@@ -134,6 +166,8 @@ class GetFred:
                     self.group_lookup[f"FRED-{clean_freq}D"]
                 )
         return df
+
+
 
     def _stationarize(self, df: pd.DataFrame, transf_codes: pd.Series) -> pd.DataFrame:
         """
@@ -199,6 +233,36 @@ class GetFred:
         url = f"{self.url_format}/{freq}/{self.vintage}.csv"
         df = pd.read_csv(url)
         return df
+
+    def _find_duplicates(self,*,fred_md_df,fred_qd_df):
+        """
+        This is a helper function to remove duplicate columns between FRED-MD and FRED-QD.
+
+        It is important to note that it is not a simple matter of duplication: QD has transformed
+        MD columns, and vice versa. This method removes it using a simple duplication test as well
+        as a "fuzzy match" that keeps MD columns wherever a transformed column occurs in either.
+        Transformations are usually indicated by the suffix 'x'.
+
+        :param fred_md_df: cleaned FRED-MD DataFrame
+        :param fred_qd_df: cleaned FRED-QD DataFrame
+        :return: combined FRED DataFrame without duplicates
+        """
+
+        warnings.warn(f"""Removing FRED-QD duplicates and fuzzy duplicates from FRED-QD before combining.
+                          See documentation for more info.""")
+
+        # initial pass: get EXACT duplicates in FRED-QD from FRED-MD
+        exact_duplicate_cols = fred_qd_df.columns[fred_qd_df.columns.isin(fred_md_df.columns)].to_list()
+        # fuzzy match pass:
+        # remove 'x' from columns of both types and prioritize both originals and transformations in FRED-MD
+        fuzzymatch_qd_cols = [s[:-1] for s in fred_qd_df.columns if s[-1] == 'x']
+        fuzzymatch_md_cols = [s[:-1] for s in fred_md_df.columns if s[-1] == 'x']
+        ignore_fuzzymatch_qd = [col + 'x' for col in fuzzymatch_qd_cols if col in fred_md_df.columns]
+        keep_fuzzymatch_md = [col for col in fuzzymatch_md_cols if col in fred_qd_df.columns]
+        ignore_cols = exact_duplicate_cols + ignore_fuzzymatch_qd + keep_fuzzymatch_md
+        # combine all together, again keepign everything that was in FRED MD and ignoring duplicates from FRED-QD
+        combined_df = pd.concat([fred_md_df,fred_qd_df.drop(columns=ignore_cols)],axis=1)
+        return combined_df
 
     def _filter_dates(
         self,
