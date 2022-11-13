@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from urllib import request
+from zipfile import ZipFile
+from io import BytesIO
 import datetime
 import warnings
 from typing import Union, Tuple
@@ -24,6 +26,7 @@ class GetFred:
         Main functions are:
         :param get_fred_md(): pulls FRED MD data
         :param get_fred_qd(): pulls FRED QD data
+        :param get_appendix(): pulls appendix from the site with metadata
         """
         self.transform = transform
         self.start_date = start_date
@@ -39,6 +42,34 @@ class GetFred:
             5: lambda l: np.log(l).diff(),
             6: lambda l: np.log(l).diff().diff(),
             7: lambda l: (l / l.shift(1) - 1).diff(),
+        }
+        self.group_lookup = {
+            "FRED-MD": {  # this isn't defined in a file anywhere (not even appendix) so need manual def
+                1: "Output and Income",
+                2: "Labor Market",
+                3: "Housing",
+                4: "Consumption, Orders, and Inventories",
+                5: "Money and Credit",
+                6: "Interest and Exchange Rates",
+                7: "Prices",
+                8: "Stock Market",
+            },
+            "FRED-QD": {
+                1: "National Income and Product Accounts (NIPA)",
+                2: "Industrial Production",
+                3: "Employment and Unemployment",
+                4: "Housing",
+                5: "Inventories, Orders, and Sales",
+                6: "Prices",
+                7: "Earnings and Productivity",
+                8: "Interest Rates",
+                9: "Money and Credit",
+                10: "Household Balance Sheets",
+                11: "Exchange Rates",
+                12: "Other",
+                13: "Stock Markets",
+                14: "Non-Household Balance Sheets",
+            },
         }
 
     def get_fred_md(self) -> pd.DataFrame:
@@ -73,6 +104,36 @@ class GetFred:
             return df, factors
         else:
             return df
+
+    def get_appendix(self, freq: str = "monthly", add_group_names: bool = True):
+        """
+        This is useful for getting group lookups; you get a direct lookup from variable names to groups this way,
+        and Stock-Watson lookup information.
+        :param freq - 'monthly' or 'quarterly'
+        :param add_group_names - whether to add the 'Group_Name' column in addition to the column that gives group numbers
+        :return: appendix Pandas Dataframe
+        """
+        clean_freq = freq[0].upper()
+        z = request.urlopen(
+            f"https://files.stlouisfed.org/files/htdocs/uploads/FRED-{clean_freq}D%20Appendix.zip"
+        )
+        myzip = ZipFile(BytesIO(z.read()))
+        df = pd.read_csv(
+            myzip.open(
+                f"FRED-{clean_freq}D Appendix/FRED-{clean_freq}D_updated_appendix.csv"
+            ),
+            encoding="cp1252",
+        )  # utf-8 fails cuz of quotes
+        if add_group_names:
+            try:
+                df["Group_Name"] = df["group"].map(
+                    self.group_lookup[f"FRED-{clean_freq}D"]
+                )
+            except KeyError:  # inconsistency in cases between MD and QD appendices
+                df["Group_Name"] = df["Group"].map(
+                    self.group_lookup[f"FRED-{clean_freq}D"]
+                )
+        return df
 
     def _stationarize(self, df: pd.DataFrame, transf_codes: pd.Series) -> pd.DataFrame:
         """
