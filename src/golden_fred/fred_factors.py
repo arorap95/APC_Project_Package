@@ -79,9 +79,9 @@ class FredFactors:
                     and list(factorselection.values())[0] <= 100
                 ), "Target variance must be between 0-100 percent"
 
-            elif list(factorselection.keys()[0]) in [2]:
+            elif list(factorselection.keys())[0] in [2]:
                 assert (
-                    list(factorselection.values())[0] < len(inputdata.columns) - 2
+                    list(factorselection.values())[0] <= len(inputdata.columns) - 2
                 ), "Maximum rank is number of columns - 2"
         # -------------------------------------------------------------------------------------------------------
 
@@ -193,7 +193,6 @@ class FredFactors:
             self.factors = self.factors.iloc[:, :optimalfactors]
             self.components = self.components.iloc[:, :optimalfactors]
             self.eigenvalues = self.eigenvalues[:optimalfactors]
-            self.explained_variance_ = self.explained_variance[:optimalfactors]
             self.explained_variance_ratio = self.explained_variance_ratio[
                 :optimalfactors
             ]
@@ -229,7 +228,6 @@ class FredFactors:
                  self.filleddata: self.originaldata with missing values replaced by factor projections
                  self.components: PCA components,
                  self.eigenvalues: PCA eigenvalues
-                 self.explained_variance: explained variance of PCA eigenvalues
                  self.explained_variance_ratio: % explained variance of PCA eigenvalues
 
         """
@@ -263,6 +261,5 @@ class FredFactors:
             columns=[f"Components {i}" for i in range(1, len(pca.components_) + 1)],
             data=pca.components_,
         )
-        self.eigenvalues = pca.singular_values_
-        self.explained_variance = pca.explained_variance_
+        self.eigenvalues = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
