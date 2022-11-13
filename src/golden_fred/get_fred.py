@@ -34,6 +34,7 @@ class GetFred:
         self.vintage = vintage  # if not default "current" MUST be YYYY-MM
         self._check_vintage()
         self.url_format = "https://files.stlouisfed.org/files/htdocs/fred-md/"
+        # The functions for stationarity are taken from the appendix PDF on the website
         self.stationarity_functions = {
             1: lambda l: l,
             2: lambda l: l.diff(),
@@ -43,8 +44,11 @@ class GetFred:
             6: lambda l: np.log(l).diff().diff(),
             7: lambda l: (l / l.shift(1) - 1).diff(),
         }
+        # These lookups from group numbers to names are taken from the PDF as well;
+        # they are not available in an easy look-up format anywhere. This is why
+        # manual definition is needed.
         self.group_lookup = {
-            "FRED-MD": {  # this isn't defined in a file anywhere (not even appendix) so need manual def
+            "FRED-MD": {
                 1: "Output and Income",
                 2: "Labor Market",
                 3: "Housing",
@@ -54,7 +58,7 @@ class GetFred:
                 7: "Prices",
                 8: "Stock Market",
             },
-            "FRED-QD": {
+            "FRED-QD": {  # note that these do not correspond to MD
                 1: "National Income and Product Accounts (NIPA)",
                 2: "Industrial Production",
                 3: "Employment and Unemployment",
@@ -298,7 +302,7 @@ class GetFred:
         df = pd.read_csv(url)
         return df
 
-    def _find_duplicates(self, *, fred_md_df, fred_qd_df):
+    def _find_duplicates(self, *, fred_md_df, fred_qd_df) -> pd.DataFrame:
         """
         This is a helper function to remove duplicate columns between FRED-MD and FRED-QD.
 
@@ -345,8 +349,10 @@ class GetFred:
         """
         If ``start_date`` and/or ``end_date`` specified will filter the dataframe
         to be within these dates. Otherwise returns the same dataframe.
+
         If the end date is chosen to be early, some columns could have all NA;
         the function leaves them in and warns the user.
+
         :param df: Pandas DataFrame with Datetime Index
         :return: Pandas DataFrame
         """
