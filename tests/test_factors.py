@@ -1,4 +1,4 @@
-from golden_fred import FredFactors
+from golden_fred import fred_factors
 import pytest
 import random
 import numpy as np
@@ -40,7 +40,7 @@ def c():
         removeoutliers=None,
         handle_missing=1,
     ):
-        return FredFactors(
+        return fred_factors.FredFactors(
             df,
             standardization,
             maxfactors,
