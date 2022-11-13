@@ -72,10 +72,14 @@ class GetFred:
             },
         }
 
-    def get_fred_md(self, group_no: Union[list, None]) -> pd.DataFrame:
+    def get_fred_md(
+        self, group_no: Union[list, None], use_descriptions: bool = False
+    ) -> pd.DataFrame:
         """
         Returns FRED-MD data per class parameters specified by user.
         :param: group_no (list or None): indicates a specific group or groups to filter for
+        :param: use_descriptions: replace series names with description names
+        (not recommended as latter is long, but is less cryptic and hence more useful for plotting)
         :return: Pandas DataFrame
         """
         raw_df = self._get_file(freq="monthly")
@@ -93,6 +97,10 @@ class GetFred:
             vars = lookup.loc[lookup["group"].isin(group_no), "fred"].to_list()
             df = df.iloc[:, df.columns.isin(vars)]
         df = self._filter_dates(df)
+        if use_descriptions:
+            lookup = self.get_appendix(freq="monthly")
+            var2desc = dict(zip(lookup["fred"], lookup["gsi:description"]))
+            df = df.rename(mapper={k: v for k, v in var2desc.items()}, axis=1)
         return df
 
     def get_fred_qd(
@@ -100,11 +108,14 @@ class GetFred:
         group_no: Union[list, None],
         interpolate_to_monthly: bool = False,
         return_factors: bool = False,
+        use_descriptions: bool = False,
     ) -> Union[Tuple[pd.DataFrame, pd.Series], pd.DataFrame]:
         """
         Returns FRED-QD data per class parameters specified by user.
         :param interpolate_to_monthly: interpolate quarterly results to monthly to match FRED-MD
         :param return_factors: return variable factors as a separate object
+        :param use_descriptions: replace variable names with descriptions.
+        Warning: this is particularly long for FRED-QD...
         :return: Pandas DataFrame
         """
         raw_df = self._get_file(freq="quarterly")
@@ -127,6 +138,14 @@ class GetFred:
             vars = lookup.loc[lookup["Group"].isin(group_no), "FRED MNEMONIC"].to_list()
             df = df.iloc[:, df.columns.isin(vars)]
         df = self._filter_dates(df)
+        if use_descriptions:
+            warnings.warn(
+                f"""Descriptions for FRED-QD variable names are particularly long.
+                              Just sayin..."""
+            )
+            lookup = self.get_appendix(freq="quarterly")
+            var2desc = dict(zip(lookup["FRED MNEMONIC"], lookup["DESCRIPTION"]))
+            df = df.rename(mapper={k: v for k, v in var2desc.items()}, axis=1)
         if return_factors:
             return df, factors
         else:
@@ -137,12 +156,15 @@ class GetFred:
         interpolate: bool = True,
         fred_md_group=Union[list, None],
         fred_qd_group=Union[list, None],
-    ):
+        use_descriptions=False,
+    ) -> pd.DataFrame:
         """
         Returns a combined monthly-quarterly panel (with the default of interpolating quarterly to monthly)
         based on user-specific groups, or a custom methodology. Interpolates by default.
         :param fred_md_group: group numbers from FRED-MD to include
         :param fred_qd_group: group numbers from FRED-QD to include
+        :param use_descriptions: replace variable names with descriptions.
+        Warning: this is particularly long for FRED-QD... and perhaps not super informative
         :return: a monthly pandas DataFrame with the series together
         """
         warnings.warn(
@@ -159,6 +181,24 @@ class GetFred:
             group_no=fred_qd_group, interpolate_to_monthly=interpolate
         )
         df = self._find_duplicates(fred_md_df=md_df, fred_qd_df=qd_df)
+        if (
+            use_descriptions
+        ):  # note: it is best to do this AFTER combining vars because lot of repetition in descriptions
+            warnings.warn(
+                f"""Descriptions for FRED-QD variable names are particularly long.
+                              Just sayin..."""
+            )
+            lookup_md = self.get_appendix(freq="monthly")
+            lookup_qd = self.get_appendix(freq="quarterly")
+            var2desc = dict(zip(lookup_md["fred"], lookup_md["gsi:description"]))
+            var2desc_qd = dict(
+                zip(lookup_qd["FRED MNEMONIC"], lookup_qd["DESCRIPTION"])
+            )
+            var2desc_qd = {
+                k: v for k, v in var2desc_qd.items() if k in df.columns
+            }  # you do not want duplicates back here
+            var2desc.update(var2desc_qd)
+            df = df.rename(mapper={k: v for k, v in var2desc.items()}, axis=1)
         return df
 
     def get_appendix(
