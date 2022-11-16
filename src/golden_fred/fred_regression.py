@@ -2,7 +2,6 @@ import abc
 import dataclasses
 import numpy as np
 from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.formula.api as smf
 from sklearn.decomposition import PCA
@@ -62,17 +61,6 @@ class FredRegression(abc.ABC):
         elif self.handle_missing() == 1:
             self.data = self.data.fillna(self.data.mean())
 
-    def plot_insample_and_outofsample_error(self):
-        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
-
-        ax[0].plot(self.dates_tested, self.in_sample_error, "--o")
-        ax[0].set_title("In sample error of {} Model".format(self.model_name))
-
-        ax[1].plot(self.dates_tested, self.out_of_sample_error, "--o")
-        ax[1].set_title("Out sample error of {} Model".format(self.model_name))
-
-        plt.gcf().autofmt_xdate()
-
 
 class AR_Model(FredRegression):
     def __init__(
@@ -85,6 +73,7 @@ class AR_Model(FredRegression):
         window_size,
         lag_patience=5,
         model_name="AR",
+        handle_missing = None
     ):
         """
         Fits the Auto-Regressive model on any time series data.
@@ -106,11 +95,13 @@ class AR_Model(FredRegression):
         self.window_size = window_size
         self.dependent_variable_name = dependent_variable_name
         self.lag_patience = lag_patience
+        self.handle_missing = handle_missing
 
         self.out_of_sample_error = None
         self.in_sample_error = None
         self.dates_tested = None
         self.lag_from_ar_model = None
+        
 
     def features_and_target(self):
         """
@@ -238,6 +229,7 @@ class Regularised_Regression_Model(FredRegression):
         model_lags,
         regularisation_type="Ridge",
         window_size=492,
+        handle_missing = 0
     ):
         self.model_name = regularisation_type
 
@@ -248,6 +240,7 @@ class Regularised_Regression_Model(FredRegression):
         self.dependent_variable_name = dependent_variable_name
         self.model_lags = model_lags
         self.regularisation_type = regularisation_type
+        self.handle_missing = handle_missing
 
         self.out_of_sample_error = None
         self.in_sample_error = None
@@ -418,6 +411,7 @@ class Neural_Network(FredRegression):
         window_size=492,
         max_iter=1000,
         activation="relu",
+        handle_missing = 0
     ):
 
         self.model_name = model_name
@@ -431,6 +425,7 @@ class Neural_Network(FredRegression):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.max_iter = max_iter
         self.activation = activation
+        self.handle_missing = handle_missing
 
         self.out_of_sample_error = None
         self.in_sample_error = None
