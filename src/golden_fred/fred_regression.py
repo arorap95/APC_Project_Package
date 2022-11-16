@@ -5,12 +5,15 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.formula.api as smf
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 import statsmodels.api as sm
 import pylab
 import collections
 from dateutil.relativedelta import relativedelta
 import sklearn
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
@@ -81,7 +84,7 @@ class AR_Model(FredRegression):
         dependent_variable_name,
         window_size,
         lag_patience=5,
-        model_name=None,
+        model_name="AR",
     ):
         """
         Fits the Auto-Regressive model on any time series data.
@@ -94,7 +97,7 @@ class AR_Model(FredRegression):
 
 
         """
-        self.model_name = model_name or "AR"
+        self.model_name = model_name
 
         self.data = data
         self.max_lag = max_lag
@@ -217,4 +220,328 @@ class AR_Model(FredRegression):
         self.out_of_sample_error = out_err
         self.in_sample_error = in_err
         self.lag_from_ar_model = order_array
+        self.dates_tested = dates_tested
+
+
+class Regularised_Regression_Model(FredRegression):
+    """
+    Regularised Linear regression
+    Please specify 'Ridge' or 'Lasso' as regularisation_type. Default is 'Ridge' (L2 regularisation)
+    """
+
+    def __init__(
+        self,
+        data,
+        start_date,
+        end_date,
+        dependent_variable_name,
+        model_lags,
+        regularisation_type="Ridge",
+        window_size=492,
+    ):
+        self.model_name = regularisation_type
+
+        self.data = data
+        self.start_date = start_date
+        self.end_date = end_date
+        self.window_size = window_size
+        self.dependent_variable_name = dependent_variable_name
+        self.model_lags = model_lags
+        self.regularisation_type = regularisation_type
+
+        self.out_of_sample_error = None
+        self.in_sample_error = None
+        self.feature_importance = None
+
+    def compute_bic(self, num_samples, degrees, squared_errors):
+        sigma_square = np.sum(squared_errors) / (num_samples - degrees)
+        return np.log(sigma_square) + degrees * np.log(num_samples) / num_samples
+
+    def compute_bic_ridge(self, training_data, training_errors, lam):
+
+        # Get degrees of freedom using long formula
+
+        res = np.matmul(training_data.T, training_data)
+        res = res + np.identity(res.shape[0]) * lam
+        res = np.linalg.inv(res)
+        res = np.matmul(np.matmul(training_data, res), training_data.T)
+        degrees = np.trace(res)
+
+        return self.compute_bic(len(training_data), degrees, training_errors)
+
+    def compute_bic_lasso(self, training_data, training_errors, coeffs):
+
+        # get degrees of freedom as the number of non-zero coeffs
+        degrees = np.sum(np.abs(coeffs) > 0)
+
+        return self.compute_bic(len(training_data), degrees, training_errors)
+
+    def _model_regularisation(self):
+        return {
+            "Ridge": sklearn.linear_model.Ridge,
+            "Lasso": sklearn.linear_model.Ridge,
+        }[self.regularisation_type]
+
+    def _bic_regularisation(self):
+        return {"Ridge": self.compute_bic_ridge, "Lasso": self.compute_bic_lasso}[
+            self.regularisation_type
+        ]
+
+    def create_lagged_data(self, data, max_lag=4, is_series=False):
+
+        lagged = []
+        for lag in range(1, max_lag + 1):
+            lagged.append(data.shift(lag))
+        if is_series:
+            return np.stack(lagged).T
+        else:
+            return np.concatenate(lagged, axis=1)
+
+    def get_error(self, y_pred, y_true):
+        """returns the mean_squared_error"""
+        return np.mean((y_pred - y_true) ** 2)
+
+    def find_best_ridge_model(self, series_data, features, lag_from_ar_model):
+
+        best_bic = np.inf
+        best_alpha = 0
+
+        lag_features = self.create_lagged_data(
+            series_data, max_lag=lag_from_ar_model, is_series=True
+        )[
+            lag_from_ar_model:,
+        ]
+        data_features = self.create_lagged_data(
+            features, max_lag=lag_from_ar_model, is_series=False
+        )[
+            lag_from_ar_model:,
+        ]
+
+        curr_target = series_data[lag_from_ar_model:]
+
+        curr_features = np.concatenate([lag_features, data_features], axis=1)
+        curr_features = scale(curr_features)
+
+        # pick the last one as out-of-sample
+        in_sample_y = curr_target[:-1].values.reshape(-1)
+        in_sample_x = curr_features[:-1, :]
+        out_sample_y = curr_target[-1]
+        out_sample_x = curr_features[-1, :].reshape(1, -1)
+
+        # create a grid of reg penalty lambdas
+        # we search in the log space
+
+        lambdas_default = np.logspace(-5, 3, 30)
+
+        for lam in lambdas:
+            model = self._model_regularisation()(lam)
+
+            model.fit(in_sample_x, in_sample_y)
+
+            in_sample_y_pred = model.predict(in_sample_x)
+            out_sample_y_pred = model.predict(out_sample_x)
+
+            curr_bic = self._bic_regularisation()(
+                in_sample_x, (in_sample_y_pred - in_sample_y) ** 2, lam
+            )
+
+            if curr_bic < best_bic:
+                best_bic = curr_bic
+                best_lam = lam
+                best_model_coeffs = model.coef_
+                in_sample_error = self.get_error(in_sample_y_pred, in_sample_y)
+                out_sample_error = self.get_error(out_sample_y_pred, out_sample_y)
+
+        return in_sample_error, out_sample_error, best_model_coeffs
+
+    def features_and_target(self):
+        """
+        splits the data into features and target based on
+        the dependent_variable_name that user inputs
+        """
+        self.features = self.data.drop(self.dependent_variable_name, axis=1)
+        self.target = self.data[self.dependent_variable_name]
+
+    def run_model(self):
+
+        self._fill_missing_data()
+        self.features_and_target()
+
+        out_err = []
+        in_err = []
+        dates_tested = []
+
+        date = self.start_date
+        idx = 0
+        while date < self.end_date:
+            dates_tested.append(date)
+            curr_window_target = self.target[self.target.index < date][
+                -self.window_size :
+            ]
+            curr_features = self.features[self.features.index < date][
+                -self.window_size :
+            ]
+            (
+                in_sample_error,
+                out_sample_error,
+                model_coeffs,
+            ) = self.find_best_ridge_model(
+                series_data=curr_window_target,
+                features=curr_features,
+                lag_from_ar_model=self.model_lags[idx],
+            )
+            out_err.append(out_sample_error)
+            in_err.append(in_sample_error)
+
+            date = date + relativedelta(months=1)
+            idx += 1
+
+        return out_err, in_err, dates_tested
+
+    def fit(self):
+        out_err, in_err, dates_tested = self.run_model()
+        self.out_of_sample_error = out_err
+        self.in_sample_error = in_err
+        self.dates_tested = dates_tested
+
+
+class Neural_Network(FredRegression):
+    def __init__(
+        self,
+        data,
+        start_date,
+        end_date,
+        dependent_variable_name,
+        model_lags,
+        hidden_layer_sizes,
+        model_name="neural_network",
+        window_size=492,
+        max_iter=1000,
+        activation="relu",
+    ):
+
+        self.model_name = model_name
+
+        self.data = data
+        self.start_date = start_date
+        self.end_date = end_date
+        self.window_size = window_size
+        self.dependent_variable_name = dependent_variable_name
+        self.model_lags = model_lags
+        self.hidden_layer_sizes = hidden_layer_sizes
+        self.max_iter = max_iter
+        self.activation = activation
+
+        self.out_of_sample_error = None
+        self.in_sample_error = None
+        self.feature_importance = None
+
+    def features_and_target(self):
+        """
+        splits the data into features and target based on
+        the dependent_variable_name that user inputs
+        """
+        self.features = self.data.drop(self.dependent_variable_name, axis=1)
+        self.target = self.data[self.dependent_variable_name]
+
+    def create_lagged_data(self, data, max_lag=4, is_series=False):
+
+        lagged = []
+        for lag in range(1, max_lag + 1):
+            lagged.append(data.shift(lag))
+        if is_series:
+            return np.stack(lagged).T
+        else:
+            return np.concatenate(lagged, axis=1)
+
+    def get_error(self, y_pred, y_true):
+        """returns the mean_squared_error"""
+        return np.mean((y_pred - y_true) ** 2)
+
+    def neural_network_model(self, series_data, features, lag_from_ar_model):
+
+        lag_features = self.create_lagged_data(
+            series_data, max_lag=lag_from_ar_model, is_series=True
+        )[
+            lag_from_ar_model:,
+        ]
+        data_features = self.create_lagged_data(
+            features, max_lag=lag_from_ar_model, is_series=False
+        )[
+            lag_from_ar_model:,
+        ]
+
+        curr_target = series_data[lag_from_ar_model:]
+
+        curr_features = np.concatenate([lag_features, data_features], axis=1)
+        curr_features = scale(curr_features)
+
+        scaler_X = StandardScaler()
+        X = scaler_X.fit_transform(curr_features)
+
+        scaler_y = StandardScaler()
+        y = scaler_y.fit_transform(curr_target.values.reshape(-1, 1))
+
+        # pick the last one as out-of-sample
+        in_sample_y = y[:-1]
+        in_sample_x = X[:-1, :]
+        out_sample_y = y[-1]
+        out_sample_x = X[-1, :]
+
+        model = MLPRegressor(
+            random_state=1,
+            hidden_layer_sizes=self.hidden_layer_sizes,
+            max_iter=self.max_iter,
+            activation=self.activation,
+        )
+
+        model = model.fit(in_sample_x, in_sample_y)
+
+        test_pred_y = model.predict([out_sample_x])
+        out_sample_y_pred = scaler_y.inverse_transform(test_pred_y.reshape(-1, 1))[0][0]
+
+        train_pred_y = model.predict(in_sample_x)
+        in_sample_y_pred = scaler_y.inverse_transform(train_pred_y.reshape(-1, 1))[0][0]
+
+        in_sample_error = self.get_error(in_sample_y_pred, in_sample_y)
+        out_sample_error = self.get_error(out_sample_y_pred, out_sample_y)
+
+        return in_sample_error, out_sample_error
+
+    def run_model(self):
+
+        self._fill_missing_data()
+        self.features_and_target()
+
+        out_err = []
+        in_err = []
+        dates_tested = []
+
+        date = self.start_date
+        idx = 0
+        while date < self.end_date:
+            dates_tested.append(date)
+            curr_window_target = self.target[self.target.index < date][
+                -self.window_size :
+            ]
+            curr_features = self.features[self.features.index < date][
+                -self.window_size :
+            ]
+            in_sample_error, out_sample_error = self.neural_network_model(
+                series_data=curr_window_target,
+                features=curr_features,
+                lag_from_ar_model=self.model_lags[idx],
+            )
+            out_err.append(out_sample_error)
+            in_err.append(in_sample_error)
+
+            date = date + relativedelta(months=1)
+            idx += 1
+
+        return out_err, in_err, dates_tested
+
+    def fit(self):
+        out_err, in_err, dates_tested = self.run_model()
+        self.out_of_sample_error = out_err
+        self.in_sample_error = in_err
         self.dates_tested = dates_tested
