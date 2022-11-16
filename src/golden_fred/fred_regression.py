@@ -73,7 +73,7 @@ class AR_Model(FredRegression):
         window_size,
         lag_patience=5,
         model_name="AR",
-        handle_missing = None
+        handle_missing=None,
     ):
         """
         Fits the Auto-Regressive model on any time series data.
@@ -101,7 +101,6 @@ class AR_Model(FredRegression):
         self.in_sample_error = None
         self.dates_tested = None
         self.lag_from_ar_model = None
-        
 
     def features_and_target(self):
         """
@@ -229,7 +228,7 @@ class Regularised_Regression_Model(FredRegression):
         model_lags,
         regularisation_type="Ridge",
         window_size=492,
-        handle_missing = 0
+        handle_missing=0,
     ):
         self.model_name = regularisation_type
 
@@ -411,7 +410,7 @@ class Neural_Network(FredRegression):
         window_size=492,
         max_iter=1000,
         activation="relu",
-        handle_missing = 0
+        handle_missing=0,
     ):
 
         self.model_name = model_name
