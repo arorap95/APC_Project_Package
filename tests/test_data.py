@@ -8,6 +8,7 @@ from pandas.testing import assert_frame_equal
 
 sample_data = pd.Series(np.random.randint(0, 100, 100))
 
+
 @pytest.fixture
 def c():
     def _c(
@@ -31,7 +32,7 @@ def test_init(c, start_date):
 
 
 @pytest.mark.parametrize("transf_code", [1, 2, 3, 4, 5, 6, 7])
-def test_stationarity(c,sample_data, transf_code):
+def test_stationarity(c, sample_data, transf_code):
     myobject = c()
     if transf_code == 1:
         assert sample_data == myobject.stationarity_functions[1](sample_data)
@@ -56,7 +57,7 @@ def test_stationarity(c,sample_data, transf_code):
 
 
 @pytest.mark.parametrize("vintage", ["2015-06", "2017-02", "2019-04"])
-def test_vintage_start(c,vintage):
+def test_vintage_start(c, vintage):
     """
     Ensure the last date is not after the vintage date. Ensure the first date is not before
     the start date of the data.
@@ -69,7 +70,7 @@ def test_vintage_start(c,vintage):
 
 
 @pytest.mark.parametrize("vintage", ["random", "2017-13", "2300-04"])
-def test_vintage_format(c,vintage):
+def test_vintage_format(c, vintage):
     """
     Ensure that putting in invalid `vintage` format throws an error.
     """
@@ -80,7 +81,7 @@ def test_vintage_format(c,vintage):
 @pytest.mark.parametrize(
     "fred_qd_group", [[1, 2], [4, 7], [5, 8, 9], [10, 11, 12], None]
 )
-def test_duplicates(c,fred_qd_group):
+def test_duplicates(c, fred_qd_group):
     """
     The purpose of this function is to test that combine_fred leads to NO exact
     duplicate columns. This is very important, as it is tricky to ensure that the
@@ -93,7 +94,7 @@ def test_duplicates(c,fred_qd_group):
 
 
 # not parametrizing due to different object dictionary names
-def test_appendix_cols(c,freq):
+def test_appendix_cols(c, freq):
     """
     The purpose of this function is to ensure that the groups saved in the class object
     correspond to the NUMBER of groups in the appendix for both QD and MD. If it breaks,
@@ -130,7 +131,7 @@ def test_interp_freq(c):
         pd.Timestamp("2022-01-01"),
     ],
 )
-def test_interp_freq(c,date):
+def test_interp_freq(c, date):
     """
     Test that the interpolation happens BEFORE the stationarity.
     This would be a big mistake if not done: it could lead to countless econometric
@@ -153,7 +154,7 @@ def test_interp_freq(c,date):
 
 
 @pytest.mark.parametrize("group_no", [[1], [2], [3], [1, 2], [8], [4, 5, 6, 7]])
-def test_md_group_varcount(c,group_no):
+def test_md_group_varcount(c, group_no):
     """
     Determine the counts of variables from pulling the full dataset for a given
     group number is equal to the number of variables in the appendix for that group.
@@ -171,7 +172,7 @@ def test_md_group_varcount(c,group_no):
 @pytest.mark.parametrize(
     "group_no", [[1], [2], [3], [1, 2], [8], [4, 5, 6, 7], [11, 12]]
 )
-def test_qd_group_varcount(c,group_no):
+def test_qd_group_varcount(c, group_no):
     """
     Determine the counts of variables from pulling the full dataset for a given
     group number is equal to the number of variables in the appendix for that group.
