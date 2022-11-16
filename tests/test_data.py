@@ -151,7 +151,7 @@ def test_interp_transform(c, date):
     qd_levels_interp_transform = myobject_levels._stationarize(
         qd_levels_interp, transf_codes
     )
-    assert (qd_levels_interp_transform.loc[date] == qd_stationary.loc[date]).all()
+    assert qd_levels_interp_transform.loc[date].equals(qd_stationary.loc[date])
     assert_frame_equal(qd_levels_interp_transform.head(1), qd_stationary.head(1))
     assert_frame_equal(qd_levels_interp_transform.tail(1), qd_stationary.tail(1))
 
