@@ -8,7 +8,9 @@ version = "0.0.1"
 dependencies = [
     "numpy",
     "pandas",
-    "scikit-learn"
+    "scikit-learn",
+    "matplotlib",
+    "statsmodels"
 ]
 [project.optional-dependencies]
 test = ["pytest"]
