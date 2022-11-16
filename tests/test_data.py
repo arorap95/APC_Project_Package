@@ -32,7 +32,7 @@ def test_init(c, start_date):
 
 
 @pytest.mark.parametrize("transf_code", [1, 2, 3, 4, 5, 6, 7])
-def test_stationarity(c, sample_data, transf_code):
+def test_stationarity(c, transf_code):
     myobject = c()
     if transf_code == 1:
         assert sample_data == myobject.stationarity_functions[1](sample_data)
