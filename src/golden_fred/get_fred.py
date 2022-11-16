@@ -12,7 +12,9 @@ class GetFred:
     def __init__(
         self,
         transform: bool = False,
-        start_date: Union[datetime.datetime, None] = None,
+            (manual_transf ==
+
+    myobject.stationarity_functions[2](sample_data)).all()        start_date: Union[datetime.datetime, None] = None,
         end_date: Union[datetime.datetime, None] = None,
         vintage: str = "current",
     ):

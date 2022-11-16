@@ -12,7 +12,7 @@ sample_data = pd.Series(np.random.randint(0, 100, 100))
 @pytest.fixture
 def c():
     def _c(
-        transform: bool = True,
+        transform: bool = False,
         start_date: Union[datetime.datetime, None] = None,
         end_date: Union[datetime.datetime, None] = None,
         vintage: str = "current",
@@ -37,25 +37,26 @@ def test_init(c, start_date):
 def test_stationarity(c, transf_code):
     myobject = c()
     if transf_code == 1:
-        assert sample_data == myobject.stationarity_functions[1](sample_data)
+        manual_transf = sample_data
+        assert manual_transf.equals(myobject.stationarity_functions[1](sample_data))
     elif transf_code == 2:
         manual_transf = sample_data.diff()
-        assert manual_transf == myobject.stationarity_functions[2](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[2](sample_data))
     elif transf_code == 3:
         manual_transf = sample_data.diff().diff()
-        assert manual_transf == myobject.stationarity_functions[3](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[3](sample_data))
     elif transf_code == 4:
         manual_transf = sample_data.diff().diff()
-        assert manual_transf == myobject.stationarity_functions[4](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[4](sample_data))
     elif transf_code == 5:
         manual_transf = np.log(sample_data).diff()
-        assert manual_transf == myobject.stationarity_functions[5](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[5](sample_data))
     elif transf_code == 6:
         manual_transf = np.log(sample_data).diff()
-        assert manual_transf == myobject.stationarity_functions[6](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[6](sample_data))
     elif transf_code == 7:
         manual_transf = np.log(sample_data).diff()
-        assert manual_transf == myobject.stationarity_functions[7](sample_data)
+        assert manual_transf.equals(myobject.stationarity_functions[7](sample_data))
 
 
 @pytest.mark.parametrize("vintage", ["2015-06", "2017-02", "2019-04"])
