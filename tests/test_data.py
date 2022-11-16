@@ -19,6 +19,8 @@ def c():
     ):
         return get_fred.GetFred(transform, start_date, end_date, vintage)
 
+    yield _c
+
 
 @pytest.mark.parametrize(
     "start_date",
@@ -94,7 +96,7 @@ def test_duplicates(c, fred_qd_group):
 
 
 # not parametrizing due to different object dictionary names
-def test_appendix_cols(c, freq):
+def test_appendix_cols(c):
     """
     The purpose of this function is to ensure that the groups saved in the class object
     correspond to the NUMBER of groups in the appendix for both QD and MD. If it breaks,
