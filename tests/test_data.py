@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from pandas.testing import assert_frame_equal
 
-sample_data = pd.Series(np.random.randint(0, 100, 100))
+sample_data = pd.Series(np.random.randint(1, 100, 100))
 
 
 @pytest.fixture
@@ -134,7 +134,7 @@ def test_interp_freq(c):
         pd.Timestamp("2022-01-01"),
     ],
 )
-def test_interp_freq(c, date):
+def test_interp_transform(c, date):
     """
     Test that the interpolation happens BEFORE the stationarity.
     This would be a big mistake if not done: it could lead to countless econometric
@@ -142,8 +142,8 @@ def test_interp_freq(c, date):
     """
     myobject_stationary = c(transform=True)
     myobject_levels = c(transform=False)
-    qd_stationary = c(interpolate_to_monthly=True)
-    qd_levels = c(interpolate_to_monthly=False)
+    qd_stationary = myobject_stationary.get_fred_qd(interpolate_to_monthly=True)
+    qd_levels = myobject_levels.get_fred_qd(interpolate_to_monthly=False)
     qd_levels_interp = qd_levels.resample("MS").interpolate()
     transf_codes = myobject_levels._clean_qd(
         myobject_levels._get_file(freq="quarterly")
