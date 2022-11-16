@@ -16,7 +16,6 @@ test = ["pytest"]
 [tool.mypy]
 strict = true
 
-
 [tool.pytest.ini_options]
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
