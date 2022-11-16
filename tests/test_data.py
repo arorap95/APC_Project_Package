@@ -4,7 +4,7 @@ from typing import Union
 import datetime
 import pandas as pd
 import numpy as np
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 
 sample_data = pd.Series(np.random.randint(0, 100, 100))
