@@ -46,16 +46,16 @@ def test_stationarity(c, transf_code):
         manual_transf = sample_data.diff().diff()
         assert manual_transf.equals(myobject.stationarity_functions[3](sample_data))
     elif transf_code == 4:
-        manual_transf = sample_data.diff().diff()
+        manual_transf = np.log(sample_data)
         assert manual_transf.equals(myobject.stationarity_functions[4](sample_data))
     elif transf_code == 5:
         manual_transf = np.log(sample_data).diff()
         assert manual_transf.equals(myobject.stationarity_functions[5](sample_data))
     elif transf_code == 6:
-        manual_transf = np.log(sample_data).diff()
+        manual_transf = np.log(sample_data).diff().diff()
         assert manual_transf.equals(myobject.stationarity_functions[6](sample_data))
     elif transf_code == 7:
-        manual_transf = np.log(sample_data).diff()
+        manual_transf = (sample_data/sample_data.shift(1) - 1).diff()
         assert manual_transf.equals(myobject.stationarity_functions[7](sample_data))
 
 
