@@ -5,13 +5,13 @@ from zipfile import ZipFile
 from io import BytesIO
 import datetime
 import warnings
-from typing import Union, Tuple
+from typing import Union, Tuple, List, Optional
 
 
 class GetFred:
     def __init__(
         self,
-        transform: bool = True,
+        transform: bool = False,
         start_date: Union[datetime.datetime, None] = None,
         end_date: Union[datetime.datetime, None] = None,
         vintage: str = "current",
@@ -77,7 +77,7 @@ class GetFred:
         }
 
     def get_fred_md(
-        self, group_no: Union[list, None], use_descriptions: bool = False
+        self, group_no: Optional[List[int]] = None, use_descriptions: bool = False
     ) -> pd.DataFrame:
         """
         Returns FRED-MD data per class parameters specified by user.
@@ -99,7 +99,7 @@ class GetFred:
                 f"""Filtering for group(s) {group_names} as specified by user..."""
             )
             vars = lookup.loc[lookup["group"].isin(group_no), "fred"].to_list()
-            df = df.iloc[:, df.columns.isin(vars)]
+            df = df.iloc[:, df.columns.str.upper().isin([v.upper() for v in vars])]
         df = self._filter_dates(df)
         if use_descriptions:
             lookup = self.get_appendix(freq="monthly")
@@ -109,7 +109,7 @@ class GetFred:
 
     def get_fred_qd(
         self,
-        group_no: Union[list, None],
+        group_no: Optional[List[int]] = None,
         interpolate_to_monthly: bool = False,
         return_factors: bool = False,
         use_descriptions: bool = False,
@@ -140,7 +140,7 @@ class GetFred:
                 f"""Filtering for group(s) {group_names} as specified by user..."""
             )
             vars = lookup.loc[lookup["Group"].isin(group_no), "FRED MNEMONIC"].to_list()
-            df = df.iloc[:, df.columns.isin(vars)]
+            df = df.iloc[:, df.columns.str.upper().isin([v.upper() for v in vars])]
         df = self._filter_dates(df)
         if use_descriptions:
             warnings.warn(
@@ -158,8 +158,8 @@ class GetFred:
     def combine_fred(
         self,
         interpolate: bool = True,
-        fred_md_group=Union[list, None],
-        fred_qd_group=Union[list, None],
+        fred_md_group: Optional[List[int]] = None,
+        fred_qd_group: Optional[List[int]] = None,
         use_descriptions=False,
     ) -> pd.DataFrame:
         """
@@ -199,7 +199,9 @@ class GetFred:
                 zip(lookup_qd["FRED MNEMONIC"], lookup_qd["DESCRIPTION"])
             )
             var2desc_qd = {
-                k: v for k, v in var2desc_qd.items() if k in df.columns
+                k: v
+                for k, v in var2desc_qd.items()
+                if k.toupper() in df.columns.toupper()
             }  # you do not want duplicates back here
             var2desc.update(var2desc_qd)
             df = df.rename(mapper={k: v for k, v in var2desc.items()}, axis=1)

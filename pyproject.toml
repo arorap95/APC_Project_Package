@@ -13,7 +13,6 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest"]
 
-
 [tool.mypy]
 strict = true
 
