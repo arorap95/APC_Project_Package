@@ -2,6 +2,7 @@ import abc
 import dataclasses
 import numpy as np
 from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.formula.api as smf
 from sklearn.decomposition import PCA
@@ -39,9 +40,6 @@ class FredRegression(abc.ABC):
     def find_feature_importance(self):
         pass
 
-    def handle_missing(self):
-        return 1
-
     def _fill_missing_data(self):
         """
         NOTE : the operations are done IN-PLACE
@@ -49,17 +47,29 @@ class FredRegression(abc.ABC):
         :param: handle_missing
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
+        default : 0
 
         """
 
         self.data.drop(index=self.data.index[[0, 1]], axis=0, inplace=True)
         self.original_input = self.data.copy()
 
-        if self.handle_missing() == 0:
+        if self.handle_missing == 0:
             self.data = self.data.ffill().bfill()
 
-        elif self.handle_missing() == 1:
+        elif self.handle_missing == 1:
             self.data = self.data.fillna(self.data.mean())
+
+    def plot_insample_and_outofsample_error(self):
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+
+        ax[0].plot(self.dates_tested, self.in_sample_error, "--o")
+        ax[0].set_title("In sample error of {} Model".format(self.model_name))
+
+        ax[1].plot(self.dates_tested, self.out_of_sample_error, "--o")
+        ax[1].set_title("Out sample error of {} Model".format(self.model_name))
+
+        plt.gcf().autofmt_xdate()
 
 
 class AR_Model(FredRegression):
@@ -73,7 +83,7 @@ class AR_Model(FredRegression):
         window_size,
         lag_patience=5,
         model_name="AR",
-        handle_missing=None,
+        handle_missing=0,
     ):
         """
         Fits the Auto-Regressive model on any time series data.
@@ -83,7 +93,6 @@ class AR_Model(FredRegression):
         :param max_lag: maximum number of lags for the AR model to be tested.
         :param start_date: first date model tests
         :param end_date : last date model tests
-
 
         """
         self.model_name = model_name
@@ -153,10 +162,10 @@ class AR_Model(FredRegression):
             in_sample_y = curr_target[:-1].values.reshape(-1)
             in_sample_x = curr_features[:-1, :]
             out_sample_y = curr_target[-1]
-            out_sample_x = curr_features[-1, :].reshape(1, -1)
+            out_sample_x = curr_features[-1, :].reshape(-1, 1)
 
             # add bias terms to features
-            in_sample_x = sm.add_constant(in_sample_x)
+            in_sample_x = sm.add_constant(in_sample_x, has_constant="add")
             out_sample_x = sm.add_constant(out_sample_x, has_constant="add")
 
             # fit model
@@ -230,6 +239,7 @@ class Regularised_Regression_Model(FredRegression):
         window_size=492,
         handle_missing=0,
     ):
+
         self.model_name = regularisation_type
 
         self.data = data
@@ -243,7 +253,6 @@ class Regularised_Regression_Model(FredRegression):
 
         self.out_of_sample_error = None
         self.in_sample_error = None
-        self.feature_importance = None
 
     def compute_bic(self, num_samples, degrees, squared_errors):
         sigma_square = np.sum(squared_errors) / (num_samples - degrees)
@@ -323,7 +332,7 @@ class Regularised_Regression_Model(FredRegression):
         # create a grid of reg penalty lambdas
         # we search in the log space
 
-        lambdas_default = np.logspace(-5, 3, 30)
+        lambdas = np.logspace(-5, 3, 30)
 
         for lam in lambdas:
             model = self._model_regularisation()(lam)
@@ -428,7 +437,6 @@ class Neural_Network(FredRegression):
 
         self.out_of_sample_error = None
         self.in_sample_error = None
-        self.feature_importance = None
 
     def features_and_target(self):
         """
