@@ -4,8 +4,8 @@ class CovarianceFred:
         data: pd.DataFrame,
     ):
 
-        """Compute the covariance matrix of FREd data with options for various techniques
-        :param: FREDMD data
+        """Compute the covariance matrix of Fred factors with options for various techniques
+        :param: FRED-MD data
         """
 
         self.originaldata = data
