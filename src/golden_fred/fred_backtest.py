@@ -4,6 +4,7 @@ import datetime
 import warnings
 import sys
 
+
 class FredBacktest:
     def __init__(
         self,
