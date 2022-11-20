@@ -1,4 +1,4 @@
-from goldenfred import fred_covariance
+from golden_fred import fred_covariance
 import pytest
 import random
 import numpy as np
