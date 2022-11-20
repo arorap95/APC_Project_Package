@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import warnings
 import sys
+from typing import Union, Tuple
 
 
 class FredBacktest:
@@ -33,7 +34,7 @@ class FredBacktest:
         # Check that parameters are set correctly
         # -------------------------------------------------------------------------------------------------------
         assert (
-            y.index[1].month - y.index[0].month == 1
+            data.index[1].month - data.index[0].month == 1
         ), "Must provide monthly Fred-MD data"
 
         assert handle_missing in [
