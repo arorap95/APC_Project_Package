@@ -112,9 +112,9 @@ class FredBacktest:
             self.initialweights = initialweightsmap
             self.Tcosts = Tcostsmap
 
-        #compute returns
+        # compute returns
         self.inputdata = self.inputdata.pct_change()
-        
+
         self._fillmissing()
         self._run_backtest()
         self._compute_stats()
