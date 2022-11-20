@@ -45,8 +45,6 @@ def test_fill(c):
     myobject.fred_compute_backtest(
         ["RPI", "W875RX1", "IPDCONGD"], [0.2, 0.5, 0.3], [0, 0, 0]
     )
-    myobject._fillmissing()
-
     assert myobject.inputdata.notnull().values.any()
 
 
@@ -55,10 +53,6 @@ def test_backtest(c):
     myobject.fred_compute_backtest(
         ["RPI", "W875RX1", "IPDCONGD"], [0.2, 0.5, 0.3], [0, 0, 0]
     )
-    myobject._fillmissing()
-    myobject._run_backtest()
-    myobject._compute_stats()
-
     assert myobject.stats.loc["Annualized Turnover (%)"] == 0
     assert (
         myobject.stats.loc["Max DD from Base"] >= myobject.stats.loc["Max Drawdown (%)"]
