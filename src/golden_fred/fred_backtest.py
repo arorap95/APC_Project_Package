@@ -112,10 +112,9 @@ class FredBacktest:
             self.initialweights = initialweightsmap
             self.Tcosts = Tcostsmap
 
-        # compute returns
-        self.inputdata = self.inputdata.pct_change()
-
         self._fillmissing()
+        # compute returns
+        self.returndata = self.inputdata.pct_change().fillna(0)
         self._run_backtest()
         self._compute_stats()
 
@@ -190,7 +189,7 @@ class FredBacktest:
             # apply returns
             for asset in prerebal.keys():
                 prerebal[asset][alldates[i + 1]] = postrebal[asset][alldates[i]] * (
-                    1 + self.inputdata.loc[alldates[i]][asset]
+                    1 + self.returndata.loc[alldates[i]][asset]
                 )
                 cumulativevalue[alldates[i + 1]] += prerebal[asset][alldates[i + 1]]
 
