@@ -75,3 +75,8 @@ data = y.get_fred_md()
 ```
 
 Step 2: Run Backtest with Custom Portfolio of Data Columns and Specified Turnover
+
+```python
+backtest = FredBacktest(data)
+backtest.fred_compute_backtest(["RPI", "W875RX1", "IPDCONGD"], initialweights = [0.2, 0.5, 0.3], Tcosts = [0 ,0 ,0])
+```
