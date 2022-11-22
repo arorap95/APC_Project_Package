@@ -114,7 +114,7 @@ class FredBacktest:
 
         self._fillmissing()
         # compute returns
-        self.returndata = self.inputdata.pct_change()
+        self.returndata = self.inputdata.pct_change().fillna(0)
         self._run_backtest()
         self._compute_stats()
 
