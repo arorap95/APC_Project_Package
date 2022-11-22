@@ -75,5 +75,3 @@ data = y.get_fred_md()
 ```
 
 Step 2: Run Backtest with Custom Portfolio of Data Columns and Specified Turnover
-
-
