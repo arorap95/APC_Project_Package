@@ -14,7 +14,7 @@ Get raw FRED-MD data
 ```python
 y = GetFred()
 data = y.get_fred_md()
-data.head()
+data.tail()
 ```
 
 Get raw FRED-QD data
