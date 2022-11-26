@@ -34,15 +34,15 @@ data_md.tail()
 ```
 
 #### Filter for specific groups of variables / combine FRED-QD and FRED-MD variables into one panel
-Filter for a specific group of variables (in this case, "Prices") in FRED-MD and replace variable names with descriptions. 
+Filter for a specific group of variables (in this case, "Prices") in FRED-MD and replace variable names with descriptions.
 ```python
 y = GetFred()
 y.group_lookup['FRED-MD'] # to see which group number correponds to the price group
-data_prices = y.get_fred_md(group_no=6,use_descriptions=True) 
+data_prices = y.get_fred_md(group_no=6,use_descriptions=True)
 data_prices.tail()
 ```
 
-Combine FRED-QD data with FRED-MD data using ``golden_fred`` fuzzy match methodology. Note that this will interpolate FRED-QD to monthly by default. 
+Combine FRED-QD data with FRED-MD data using ``golden_fred`` fuzzy match methodology. Note that this will interpolate FRED-QD to monthly by default.
 
 ```python
 y = GetFred()
@@ -50,10 +50,10 @@ data_combined = y.combine_fred()
 data_combined.tail()
 ```
 
-Combine a specific FRED-MD and FRED-QD collection of groups specified by the user. 
+Combine a specific FRED-MD and FRED-QD collection of groups specified by the user.
 ```python
 y = GetFred()
-y.group_lookup['FRED-QD'] 
+y.group_lookup['FRED-QD']
 data_combined = y.combine_fred(fred_md_group = [6,3], fred_qd_group = [2])
 data_combined.tail()
 ```
