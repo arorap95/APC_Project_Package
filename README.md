@@ -21,7 +21,7 @@ Get raw FRED-QD data
 ```python
 y = GetFred()
 data = y.get_fred_qd()
-data.head()
+data.tail()
 ```
 
 #### Get stationarized FRED data
@@ -30,7 +30,7 @@ Get FRED data with FRED-recommended stationarity transformations
 y = GetFred(transform=True)
 data_md = y.get_fred_md()
 data_qd = y.get_fred_qd()
-data_md.head()
+data_md.tail()
 ```
 
 #### Filter for specific groups of variables / combine FRED-QD and FRED-MD variables into one panel
@@ -39,7 +39,7 @@ Filter for a specific group of variables (in this case, "Prices") in FRED-MD and
 y = GetFred()
 y.group_lookup['FRED-MD'] # to see which group number correponds to the price group
 data_prices = y.get_fred_md(group_no=6,use_descriptions=True) 
-data_prices.head()
+data_prices.tail()
 ```
 
 Combine FRED-QD data with FRED-MD data using ``golden_fred`` fuzzy match methodology. Note that this will interpolate FRED-QD to monthly by default. 
@@ -47,7 +47,7 @@ Combine FRED-QD data with FRED-MD data using ``golden_fred`` fuzzy match methodo
 ```python
 y = GetFred()
 data_combined = y.combine_fred()
-data_combined.head()
+data_combined.tail()
 ```
 
 Combine a specific FRED-MD and FRED-QD collection of groups specified by the user. 
@@ -55,7 +55,7 @@ Combine a specific FRED-MD and FRED-QD collection of groups specified by the use
 y = GetFred()
 y.group_lookup['FRED-QD'] 
 data_combined = y.combine_fred(fred_md_group = [6,3], fred_qd_group = [2])
-data_combined.head()
+data_combined.tail()
 ```
 
 #### See appendix (e.g., background information provided by FRED-MD and FRED-QD authors)
