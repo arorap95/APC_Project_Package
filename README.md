@@ -3,9 +3,9 @@ Members: Alex, Poorva, Sneha
 
 ## Project Description:
 
-This package seeks to provide a golden copy of FRED-MD and FRED-QD data for use by economic and financial researchers, as well as provide a simple framework to perform common statistical tasks that researchers perform with this data, such as dimension reduction (by means of PCA), statistical modeling, and covariance matrix estimation. 
+This package seeks to provide a golden copy of FRED-MD and FRED-QD data for use by economic and financial researchers, as well as provide a simple framework to perform common statistical tasks that researchers perform with this data, such as dimension reduction (by means of PCA), statistical modeling, and covariance matrix estimation.
 
-In addition to providing a golden copy of the raw data, it also provides user-friendly methods of returning stationarized data, combinations of FRED-MD and FRED-QD data into a standard monthly panel using a fuzzy-match technique, and picking and choosing of which groups of variables to include from FRED-MD and FRED-QD. It thus seeks to prevent manual downloading of files from FRED-MD and FRED-QD, as well as the potential bugs that could arise from stationarizing the data, picking and choosing among variable groups, etc. 
+In addition to providing a golden copy of the raw data, it also provides user-friendly methods of returning stationarized data, combinations of FRED-MD and FRED-QD data into a standard monthly panel using a fuzzy-match technique, and picking and choosing of which groups of variables to include from FRED-MD and FRED-QD. It thus seeks to prevent manual downloading of files from FRED-MD and FRED-QD, as well as the potential bugs that could arise from stationarizing the data, picking and choosing among variable groups, etc.
 
 ## How to Use the Package:
 
