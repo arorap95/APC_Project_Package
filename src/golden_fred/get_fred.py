@@ -26,6 +26,7 @@ class GetFred:
         Main functions are:
         :param get_fred_md(): pulls FRED MD data
         :param get_fred_qd(): pulls FRED QD data
+        :param combine_fred(): combines FRED MD and FRED QD data using fuzzy match technique
         :param get_appendix(): pulls appendix from the site with metadata
         """
         self.transform = transform
