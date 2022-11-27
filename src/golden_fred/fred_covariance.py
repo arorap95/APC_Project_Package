@@ -7,8 +7,7 @@ import sys
 
 class CovarianceFred:
     def __init__(
-        self,
-        data: pd.DataFrame,
+        self, data: pd.DataFrame,
     ):
 
         """Compute the covariance matrix of Fred factors with options for various techniques

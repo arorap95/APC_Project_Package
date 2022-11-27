@@ -345,10 +345,7 @@ class GetFred:
         )
         return combined_df
 
-    def _filter_dates(
-        self,
-        df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    def _filter_dates(self, df: pd.DataFrame,) -> pd.DataFrame:
         """
         If ``start_date`` and/or ``end_date`` specified will filter the dataframe
         to be within these dates. Otherwise returns the same dataframe.
