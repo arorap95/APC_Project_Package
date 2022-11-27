@@ -118,6 +118,21 @@ covariance.positive_semidefinite_method2()
 ```
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 ### Forecast Data Using Various Regression Techniques
+We provide 4 prediction techniques to the user.
+The input to all models is the data from the GetFred() module, along with other model specific parameters.
+All models have the following methods:
+model.dates_tested : dates for which we tested our regression model
+model.in_sample_error : in sample or train error of the model
+model.out_of_sample_error: out of sample or test error of the model
+model.targets : true value of the dependent variable
+model.predicted : predicted value by the model.
+1. Auto Regressive Model
+2. Regularised Regression Models:
+a. Lasso
+b. Ridge
+3. Neural Network Model
+
+Please refer to test_fit() in tests/test_fred_regression.py for working examples.
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 ### Obtain Backtest Statistics on Data or Portfolio of Data
