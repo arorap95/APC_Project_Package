@@ -29,7 +29,8 @@ class CovarianceFred:
         """Compute covariance matrix with thresholding of a minimum correlation between any 2 assets
         :param correlationthreshold: correlation threshold integer
         :return: Pandas DataFrame"""
-
+        
+        #run checks
         assert (
             abs(correlationthreshold) <= 1
         ), "Correlation threshold must range from -1 to 1"
