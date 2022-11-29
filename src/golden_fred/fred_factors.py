@@ -98,7 +98,7 @@ class FredFactors:
         """
         Wrapper Function called by the user. Processes input data by removing outliers, fills missing values,
         runs PCA, and selects optimal number of factors.
-        :return: self.factors
+        :return: self.factors, user can access other metrics on self
         """
         self._removeoutliers()
         self._fillmissing()
