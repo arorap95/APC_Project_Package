@@ -20,9 +20,9 @@ from sklearn.preprocessing import StandardScaler
 class FredRegression(abc.ABC):
     """
     Base class for all regression methods.
-    The user will call the method fit() which will fit the model 
+    The user will call the method fit() which will fit the model
     and compute the test and train errors for the data.
-    
+
     """
 
     def compute_bic(self):
@@ -52,7 +52,7 @@ class FredRegression(abc.ABC):
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
         default : 0
-        
+
         """
 
         self.data.drop(index=self.data.index[[0, 1]], axis=0, inplace=True)
@@ -98,23 +98,23 @@ class AR_Model(FredRegression):
     ):
         """
         Fits the Auto-Regressive model on any time series data.
-        
+
         :param data       : input time series dataframe, must contain a column with the user input value of
         dependent_variable_name. Data should have minimum [start_date - window_size to end_date] rows
-        :param max_lag    : maximum number of lags for the AR model to be tested. 
+        :param max_lag    : maximum number of lags for the AR model to be tested.
         :param start_date : first date model tests
         :param end_date   : last date model tests
         :param dependent_variable_name : variable to be predicted.
         :param window_size  : window size to use for the AR model
         :param lag_patience : Fitting AR models with higher orders take much longer and have
           convergence issues. We therefore use a heuristic to reduce the computatoin
-          time. We keep monitoring the BIC value, and if the BIC value hasn't 
-          reduced for `lag_patience` number of orders, we stop the computation 
-          then and return the current lowest. We experimented with different 
-          `patience_thres` values and the results look qualitatively similar. 
+          time. We keep monitoring the BIC value, and if the BIC value hasn't
+          reduced for `lag_patience` number of orders, we stop the computation
+          then and return the current lowest. We experimented with different
+          `patience_thres` values and the results look qualitatively similar.
         :param model_name     : name of the model, used in plot_insample_and_outofsample_error()
-        :param handle_missing : 0/1 - specifies how to handle missing data. 
-                   
+        :param handle_missing : 0/1 - specifies how to handle missing data.
+
         """
         self.model_name = model_name
 
@@ -136,8 +136,8 @@ class AR_Model(FredRegression):
 
     def features_and_target(self):
         """
-        splits the data into features and target based on 
-        the dependent_variable_name that user inputs 
+        splits the data into features and target based on
+        the dependent_variable_name that user inputs
         """
         self.features = self.data.drop(self.dependent_variable_name, axis=1)
         self.target = self.data[self.dependent_variable_name]
@@ -153,7 +153,7 @@ class AR_Model(FredRegression):
             return np.concatenate(lagged, axis=1)
 
     def get_error(self, y_pred, y_true):
-        """ returns the mean_squared_error"""
+        """returns the mean_squared_error"""
         return np.mean((y_pred - y_true) ** 2)
 
     def compute_bic(self, model):
@@ -171,7 +171,9 @@ class AR_Model(FredRegression):
 
             curr_features = self.create_lagged_data(
                 series_data, max_lag=lag, is_series=True
-            )[lag:,]
+            )[
+                lag:,
+            ]
             curr_target = series_data[lag:]
 
             # pick the last one as out-of-sample
@@ -287,8 +289,8 @@ class Regularised_Regression_Model(FredRegression):
         :param regularisation_type : please specify Lasso or Ridge.
         :param model_lags : if not specified, we use lags from AR_model as the optimum lag.
         :param window_size  : window size for the model
-        :param handle_missing : 0/1 - specifies how to handle missing data. 
-        :param lambdas : lamba values to check for the model. 
+        :param handle_missing : 0/1 - specifies how to handle missing data.
+        :param lambdas : lamba values to check for the model.
         we check 4 values as default : [ 0.01,  0.1 ,  1.  , 10.  ]
         """
 
@@ -356,7 +358,7 @@ class Regularised_Regression_Model(FredRegression):
             return np.concatenate(lagged, axis=1)
 
     def get_error(self, y_pred, y_true):
-        """ returns the mean_squared_error"""
+        """returns the mean_squared_error"""
         return np.mean((y_pred - y_true) ** 2)
 
     def find_best_model(self, series_data, features, lag_from_ar_model):
@@ -366,10 +368,14 @@ class Regularised_Regression_Model(FredRegression):
 
         lag_features = self.create_lagged_data(
             series_data, max_lag=lag_from_ar_model, is_series=True
-        )[lag_from_ar_model:,]
+        )[
+            lag_from_ar_model:,
+        ]
         data_features = self.create_lagged_data(
             features, max_lag=lag_from_ar_model, is_series=False
-        )[lag_from_ar_model:,]
+        )[
+            lag_from_ar_model:,
+        ]
 
         curr_target = series_data[lag_from_ar_model:]
 
@@ -411,8 +417,8 @@ class Regularised_Regression_Model(FredRegression):
 
     def features_and_target(self):
         """
-        splits the data into features and target based on 
-        the dependent_variable_name that user inputs 
+        splits the data into features and target based on
+        the dependent_variable_name that user inputs
         """
         self.features = self.data.drop(self.dependent_variable_name, axis=1)
         self.target = self.data[self.dependent_variable_name]
@@ -511,8 +517,8 @@ class Neural_Network(FredRegression):
 
     def features_and_target(self):
         """
-        splits the data into features and target based on 
-        the dependent_variable_name that user inputs 
+        splits the data into features and target based on
+        the dependent_variable_name that user inputs
         """
         self.features = self.data.drop(self.dependent_variable_name, axis=1)
         self.target = self.data[self.dependent_variable_name]
@@ -527,17 +533,21 @@ class Neural_Network(FredRegression):
             return np.concatenate(lagged, axis=1)
 
     def get_error(self, y_pred, y_true):
-        """ returns the mean_squared_error"""
+        """returns the mean_squared_error"""
         return np.mean((y_pred - y_true) ** 2)
 
     def neural_network_model(self, series_data, features, lag_from_ar_model):
 
         lag_features = self.create_lagged_data(
             series_data, max_lag=lag_from_ar_model, is_series=True
-        )[lag_from_ar_model:,]
+        )[
+            lag_from_ar_model:,
+        ]
         data_features = self.create_lagged_data(
             features, max_lag=lag_from_ar_model, is_series=False
-        )[lag_from_ar_model:,]
+        )[
+            lag_from_ar_model:,
+        ]
 
         curr_target = series_data[lag_from_ar_model:]
 
