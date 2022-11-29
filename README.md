@@ -1,5 +1,5 @@
 # APC 524 Project: golden_fred
-Members: Alex, Poorva, Sneha
+Members: Alex A., Poorva A., Sneha M.
 
 ## Project Description:
 
