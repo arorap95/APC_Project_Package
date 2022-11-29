@@ -2,8 +2,6 @@ import pytest
 import unittest
 import numpy as np
 import pandas as pd
-import fred_regression
-import get_fred
 from golden_fred import fred_regression
 from golden_fred import get_fred
 import datetime
