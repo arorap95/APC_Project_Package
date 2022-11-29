@@ -27,7 +27,7 @@ class GetFred:
         :param get_fred_md(): pulls FRED MD data
         :param get_fred_qd(): pulls FRED QD data
         :param combine_fred(): combines FRED MD and FRED QD data using fuzzy match technique
-        :param get_appendix(): pulls appendix from the site with metadata
+        :param get_appendix(): pulls appendix from the site with metadata; pulls only updated version
         """
         self.transform = transform
         self.start_date = start_date
