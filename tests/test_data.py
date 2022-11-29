@@ -35,6 +35,10 @@ def test_init(c, start_date):
 
 @pytest.mark.parametrize("transf_code", [1, 2, 3, 4, 5, 6, 7])
 def test_stationarity(c, transf_code):
+    """
+    It is important to note that these functions correspond to the stationarity functions
+    in the FRED-MD and FRED-QD appendices. See those files or get_fred.get_appendix()
+    """
     myobject = c()
     if transf_code == 1:
         manual_transf = sample_data
