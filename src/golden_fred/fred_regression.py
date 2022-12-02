@@ -16,28 +16,44 @@ from statsmodels.tsa.tsatools import lagmat
 from typing import Union, Tuple, List, Optional
 import datetime
 
+
 class FredRegression:
     """
     Base class for all regression methods.
-    The user will call the method fit() 
+    The user will call the method fit()
     """
-    def __init__(self, 
-        data : pd.DataFrame,
-        start_date : Union[datetime.datetime, None],
-        end_date : Union[datetime.datetime, None],
-        dependent_variable_name : str,
-        window_size : int,
-        model_name :str,
-        handle_missing : int = 0,
-        frequency : str = 'monthly'):
+
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        start_date: Union[datetime.datetime, None],
+        end_date: Union[datetime.datetime, None],
+        dependent_variable_name: str,
+        window_size: int,
+        model_name: str,
+        handle_missing: int = 0,
+        frequency: str = "monthly",
+    ):
 
         # Check that parameters are set correctly
         # -------------------------------------------------------------------------------------------------------
-        assert start_date >=min(data.index.values), "start_date provided not in range of data"
-        assert end_date <=max(data.index.values), "end_date provided not in range of data"
-        assert dependent_variable_name in list(data), "dependent_variable_name should be a column in input_data"
-        assert handle_missing in [ 0,1 ], "Handle Missing parameter must be an integer in [0,1]"
-        assert frequency in ['monthly', 'quarterly'], "frequency should be monthly or quarterly"
+        assert start_date >= min(
+            data.index.values
+        ), "start_date provided not in range of data"
+        assert end_date <= max(
+            data.index.values
+        ), "end_date provided not in range of data"
+        assert dependent_variable_name in list(
+            data
+        ), "dependent_variable_name should be a column in input_data"
+        assert handle_missing in [
+            0,
+            1,
+        ], "Handle Missing parameter must be an integer in [0,1]"
+        assert frequency in [
+            "monthly",
+            "quarterly",
+        ], "frequency should be monthly or quarterly"
         # -------------------------------------------------------------------------------------------------------
 
         self.model_name = model_name
@@ -49,7 +65,7 @@ class FredRegression:
         self.handle_missing = handle_missing
         self.frequency = frequency
 
-        self.month_increment = { 'monthly':1, 'quarterly':3}[self.frequency]
+        self.month_increment = {"monthly": 1, "quarterly": 3}[self.frequency]
 
         self.out_of_sample_error = []
         self.in_sample_error = []
@@ -61,9 +77,9 @@ class FredRegression:
         pass
 
     def _model(self):
-        ''' 
+        """
         Implementation specific to the model
-        '''
+        """
         raise NotImplementError
 
     def run_model(self):
@@ -80,7 +96,6 @@ class FredRegression:
         """
         self.features = self.data.drop(self.dependent_variable_name, axis=1)
         self.target = self.data[self.dependent_variable_name]
-                
 
     def create_lagged_data(self, data, max_lag, is_series=False):
         lagged = []
@@ -90,8 +105,8 @@ class FredRegression:
             return np.stack(lagged).T
         else:
             return np.concatenate(lagged, axis=1)
-        
-    def lagged_features_and_target(self, series_data, features,lag ):
+
+    def lagged_features_and_target(self, series_data, features, lag):
         self.lag_features = self.create_lagged_data(
             series_data, max_lag=lag, is_series=True
         )[
@@ -132,8 +147,7 @@ class FredRegression:
         elif self.handle_missing == 1:
             self.data = self.data.fillna(self.data.mean())
 
-
-    def _run_model(self, use_lags = None):
+    def _run_model(self, use_lags=None):
 
         self._fill_missing_data()
         self.features_and_target()
@@ -149,15 +163,14 @@ class FredRegression:
             curr_features = self.features[self.features.index < date][
                 -self.window_size :
             ]
-            kwargs['series_data'] = curr_window_target
-            kwargs['features'] = curr_features
+            kwargs["series_data"] = curr_window_target
+            kwargs["features"] = curr_features
             if use_lags:
-                kwargs['lag'] = use_lags[idx]
+                kwargs["lag"] = use_lags[idx]
 
-            self._model( **kwargs )
-            date = date + relativedelta(months = self.month_increment)
+            self._model(**kwargs)
+            date = date + relativedelta(months=self.month_increment)
             idx += 1
-
 
     def plot_insample_and_outofsample_error(self):
         fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
@@ -181,16 +194,16 @@ class FredRegression:
 class AR_Model(FredRegression):
     def __init__(
         self,
-        data : pd.DataFrame,
-        start_date : Union[datetime.datetime, None],
-        end_date : Union[datetime.datetime, None],
-        dependent_variable_name : str,
-        window_size : int,
-        max_lag : int,
-        model_name :str='AR',
-        handle_missing : int = 0,
-        frequency : str = 'monthly', 
-        lag_patience: int =5,
+        data: pd.DataFrame,
+        start_date: Union[datetime.datetime, None],
+        end_date: Union[datetime.datetime, None],
+        dependent_variable_name: str,
+        window_size: int,
+        max_lag: int,
+        model_name: str = "AR",
+        handle_missing: int = 0,
+        frequency: str = "monthly",
+        lag_patience: int = 5,
     ):
         """
         Fits the Auto-Regressive model on any time series data.
@@ -212,14 +225,16 @@ class AR_Model(FredRegression):
         :param handle_missing : 0/1 - specifies how to handle missing data.
 
         """
-        super().__init__( model_name = model_name,
-                        data = data,     
-                        start_date = start_date,
-                        end_date = end_date,
-                        window_size = window_size,
-                        dependent_variable_name = dependent_variable_name, 
-                        handle_missing = handle_missing, 
-                        frequency = frequency )
+        super().__init__(
+            model_name=model_name,
+            data=data,
+            start_date=start_date,
+            end_date=end_date,
+            window_size=window_size,
+            dependent_variable_name=dependent_variable_name,
+            handle_missing=handle_missing,
+            frequency=frequency,
+        )
 
         self.max_lag = max_lag
         self.lag_patience = lag_patience
@@ -238,7 +253,7 @@ class AR_Model(FredRegression):
 
         for lag in range(1, self.max_lag + 1):
 
-            self.lagged_features_and_target(series_data, features,lag)
+            self.lagged_features_and_target(series_data, features, lag)
 
             # pick the last one as out-of-sample
             in_sample_y = self.curr_target[:-1].values.reshape(-1)
@@ -265,15 +280,16 @@ class AR_Model(FredRegression):
 
             if lag - best_lag > self.lag_patience:
                 break
-                
+
         self.out_of_sample_error.append(out_sample_error)
         self.in_sample_error.append(in_sample_error)
         self.true.append(out_sample_y)
         self.predicted.append(out_sample_y_pred[0])
         self.lag_from_ar_model.append(best_lag)
-  
+
     def run_model(self):
         self._run_model()
+
 
 class Regularised_Regression_Model(FredRegression):
     """
@@ -283,16 +299,16 @@ class Regularised_Regression_Model(FredRegression):
 
     def __init__(
         self,
-        data : pd.DataFrame,
-        start_date : Union[datetime.datetime, None],
-        end_date : Union[datetime.datetime, None],
-        dependent_variable_name : str,
-        window_size : int,
-        model_lags : List[int],
-        handle_missing : int = 0,
-        frequency : str = 'monthly', 
-        lag_patience: int =5,
-        regularisation_type :str = "Ridge",
+        data: pd.DataFrame,
+        start_date: Union[datetime.datetime, None],
+        end_date: Union[datetime.datetime, None],
+        dependent_variable_name: str,
+        window_size: int,
+        model_lags: List[int],
+        handle_missing: int = 0,
+        frequency: str = "monthly",
+        lag_patience: int = 5,
+        regularisation_type: str = "Ridge",
         lambdas: List[int] = np.logspace(-2, 1, 4),
     ):
         """
@@ -308,20 +324,25 @@ class Regularised_Regression_Model(FredRegression):
         :param lambdas : lamba values to check for the model.
         we check 4 values as default : [ 0.01,  0.1 ,  1.  , 10.  ]
         """
-        
+
         # Check that parameters are set correctly
         # -------------------------------------------------------------------------------------------------------
-        assert regularisation_type in ['Ridge', 'Lasso'], "Regularisation type should be Ridge or Lasso"
+        assert regularisation_type in [
+            "Ridge",
+            "Lasso",
+        ], "Regularisation type should be Ridge or Lasso"
         # -------------------------------------------------------------------------------------------------------
 
-        super().__init__( model_name = regularisation_type,
-                        data = data,     
-                        start_date = start_date,
-                        end_date = end_date,
-                        window_size = window_size,
-                        dependent_variable_name = dependent_variable_name, 
-                        handle_missing = handle_missing,
-                        frequency = frequency )
+        super().__init__(
+            model_name=regularisation_type,
+            data=data,
+            start_date=start_date,
+            end_date=end_date,
+            window_size=window_size,
+            dependent_variable_name=dependent_variable_name,
+            handle_missing=handle_missing,
+            frequency=frequency,
+        )
 
         self.model_lags = model_lags
         self.regularisation_type = regularisation_type
@@ -367,8 +388,8 @@ class Regularised_Regression_Model(FredRegression):
         best_bic = np.inf
         best_alpha = 0
 
-        self.lagged_features_and_target(series_data, features,lag)
-        
+        self.lagged_features_and_target(series_data, features, lag)
+
         # pick the last one as out-of-sample
         in_sample_y = self.curr_target[:-1].values.reshape(-1)
         in_sample_x = self.curr_features[:-1, :]
@@ -393,51 +414,58 @@ class Regularised_Regression_Model(FredRegression):
                 best_model_coeffs = model.coef_
                 in_sample_error = self.get_error(in_sample_y_pred, in_sample_y)
                 out_sample_error = self.get_error(out_sample_y_pred, out_sample_y)
-                
+
         self.out_of_sample_error.append(out_sample_error)
         self.in_sample_error.append(in_sample_error)
         self.true.append(out_sample_y)
         self.predicted.append(out_sample_y_pred)
         self.model_coef.append(best_model_coeffs)
 
-    def run_model(self): 
-        self._run_model( use_lags = self.model_lags)
-       
+    def run_model(self):
+        self._run_model(use_lags=self.model_lags)
+
 
 class Neural_Network(FredRegression):
     def __init__(
-      self,
-    data : pd.DataFrame,
-    start_date : Union[datetime.datetime, None],
-    end_date : Union[datetime.datetime, None],
-    dependent_variable_name : str,
-    window_size : int,
-    model_lags : List[int],
-    hidden_layer_sizes : Tuple[int],
-    max_iter : int = 1000,
-    activation :str = "relu",
-    handle_missing : int = 0,
-    frequency : str = 'monthly',    
-    model_name :str = "neural_network",
+        self,
+        data: pd.DataFrame,
+        start_date: Union[datetime.datetime, None],
+        end_date: Union[datetime.datetime, None],
+        dependent_variable_name: str,
+        window_size: int,
+        model_lags: List[int],
+        hidden_layer_sizes: Tuple[int],
+        max_iter: int = 1000,
+        activation: str = "relu",
+        handle_missing: int = 0,
+        frequency: str = "monthly",
+        model_name: str = "neural_network",
     ):
         """
         :param activation_function : Supported activations are ['identity', 'logistic', 'relu', 'softmax', 'tanh'].
         """
-        super().__init__( model_name = model_name,
-                        data = data,     
-                        start_date = start_date,
-                        end_date = end_date,
-                        window_size = window_size,
-                        dependent_variable_name = dependent_variable_name, 
-                        handle_missing = handle_missing,
-                        frequency = frequency )
+        super().__init__(
+            model_name=model_name,
+            data=data,
+            start_date=start_date,
+            end_date=end_date,
+            window_size=window_size,
+            dependent_variable_name=dependent_variable_name,
+            handle_missing=handle_missing,
+            frequency=frequency,
+        )
 
         # Check that parameters are set correctly
         # -------------------------------------------------------------------------------------------------------
-        assert activation in ['identity', 'logistic', 'relu', 'softmax', 'tanh'], " Supported activations are ['identity', 'logistic', 'relu', 'softmax', 'tanh']"
+        assert activation in [
+            "identity",
+            "logistic",
+            "relu",
+            "softmax",
+            "tanh",
+        ], " Supported activations are ['identity', 'logistic', 'relu', 'softmax', 'tanh']"
         # -------------------------------------------------------------------------------------------------------
 
-  
         self.model_lags = model_lags
         self.hidden_layer_sizes = hidden_layer_sizes
         self.max_iter = max_iter
@@ -445,7 +473,7 @@ class Neural_Network(FredRegression):
 
     def _model(self, series_data, features, lag):
 
-        self.lagged_features_and_target(series_data, features,lag)
+        self.lagged_features_and_target(series_data, features, lag)
 
         scaler_X = StandardScaler()
         X = scaler_X.fit_transform(self.curr_features)
@@ -482,4 +510,4 @@ class Neural_Network(FredRegression):
         self.predicted.append(out_sample_y_pred)
 
     def run_model(self):
-         self._run_model( use_lags = self.model_lags)
+        self._run_model(use_lags=self.model_lags)
