@@ -13,6 +13,8 @@ from sklearn.decomposition import PCA
 import sys
 import pytest
 import math
+from scipy import sparse
+import cvxpy as cp
 
 
 # create data to test all functions
@@ -129,3 +131,13 @@ def test_backtest(c):
         myobject.stats.loc["Annualized Vol (%)"],
         abs_tol=1e-3,
     )
+
+
+def test_regime(c):
+    myobject = c(df)
+    myobject._fillmissing()
+
+    myobject.regime_filtering(["RPI", "W875RX1"])
+
+    for col in myobject.regimes.columns:
+        assert myobject.regimes[col].all() in [-1, 0, 1]

@@ -7,6 +7,8 @@ from typing import Union, Tuple
 import datetime
 import warnings
 from typing import Union, Tuple
+from scipy import sparse
+import cvxpy as cp
 
 
 class FredBacktest:
@@ -121,6 +123,45 @@ class FredBacktest:
         self._compute_stats()
 
         return self.stats
+
+    def regime_filtering(
+        self, columns: np.array, lambda_param: np.array = None
+    ) -> pd.DataFrame:
+
+        """
+        Wrapper function called by the user to extract historical regimes.
+        Runs a L1 trend-filtering algorithm
+
+        :param columns: array of column names for regime filtering
+        :param lambda_param: array of lambda regularization parameteres for L1 trend filtering
+        : return Pandas DataFrame: containing a historical time series of +1 to -1 for each column, corresponding to
+        expansion and contraction regimes respectively
+        """
+
+        # Check that parameters are set correctly
+        # -------------------------------------------------------------------------------------------------------
+        if lambda_param is None:
+            lambda_param = [10000] * len(columns)
+
+        assert (
+            len(columns) >= 1
+        ), "Must have at least 1 column name for a historical regime backtest"
+        assert len(lambda_param) == len(
+            columns
+        ), "Length of lambda parameters must match length of columns"
+
+        for column in columns:
+            assert (
+                column in self.inputdata.columns.values
+            ), f"{column} does not exist in the data column names"
+
+        # -------------------------------------------------------------------------------------------------------
+        self.columns = np.array(columns)
+        self.lambdas = np.array(lambda_param)
+        self._fillmissing()
+        self._run_regimefiltering()
+
+        return self.regimes
 
     def _is_rebal(self, date):
         """Uses index to check whether specified date is a rebalancing date
@@ -251,3 +292,37 @@ class FredBacktest:
         stats["Annualized Sharpe"] = round(sharpe, 2)
 
         self.stats = pd.Series(stats)
+
+    def _run_regimefiltering(self):
+        regimes = None
+
+        for i, column in enumerate(self.columns):
+            # Set up L1 regime filter algorithm
+            n = len(self.inputdata[column])
+            one_vec = np.ones((1, n))
+            D = sparse.spdiags(
+                np.vstack((one_vec, -2 * one_vec, one_vec)), range(3), m=n - 2, n=n
+            ).toarray()  # spdiags(data, diags_to_set, m, n
+
+            # run the optimization using cvxpy
+            y = self.inputdata[column].values
+            lambd = self.lambdas[i]
+            x = cp.Variable(n)
+            obj = cp.Minimize(0.5 * cp.sum_squares(y - x) + lambd * cp.norm(D @ x, 1))
+            prob = cp.Problem(obj)
+            prob.solve()
+
+            # identify +1 and -1 regimes as regions of positive and negative slopes, and 0 as transition
+            slopes = np.diff(x.value)
+            result = np.where(slopes < 0, -1, slopes)
+            result = np.where(result > 0, 1, result)
+            result = np.where(result == 0, 0, result)
+
+            if regimes is None:
+                regimes = result
+            else:
+                regimes = np.concatenate(([regimes], [result]), axis=0)
+
+        regimes = pd.DataFrame(regimes.T, index=self.inputdata.index.values[1:])
+        regimes.columns = self.columns
+        self.regimes = regimes
