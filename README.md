@@ -199,7 +199,9 @@ model.plot_insample_and_outofsample_error()
 Please refer to test_fit() in tests/test_fred_regression.py for working examples.
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
-### Obtain Backtest Statistics on Data or Portfolio of Data
+### Run Backtest Functionality on Data or Portfolio of Data
+
+#### Get Backtest Statistics on Custom Portfolio of Data
 Step 1: Obtain Raw Data
 ```python
 y = GetFred()
@@ -211,5 +213,20 @@ Step 2: Run Backtest with Custom Portfolio of Data Columns and Specified Turnove
 ```python
 backtest = FredBacktest(data)
 backtest.fred_compute_backtest(["RPI", "W875RX1", "IPDCONGD"], initialweights = [0.2, 0.5, 0.3], Tcosts = [0 ,0 ,0])
+```
+
+#### Run Regime Filtering on Historical Data to Identify Expansion, Transition and Contraction Regimes
+
+Step 1: Obtain Raw Data
+```python
+y = GetFred()
+data = y.get_fred_md()
+```
+Step 2: Run L1 Trend Filtering Algorithm with Specified Lambda Parameter
+
+```python
+backtest = FredBacktest(data)
+backtest.regime_filtering(["RPI", "IPDCONGD"], lambda_param=[10000,10000])
+
 ```
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
