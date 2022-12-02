@@ -29,7 +29,9 @@ df = create_input()
 @pytest.fixture
 def c():
     def _c(df, start_date=None, end_date=None, rebalancing="monthly", handle_missing=1):
-        return fred_backtest.FredBacktest(df, start_date, end_date, rebalancing, handle_missing)
+        return fred_backtest.FredBacktest(
+            df, start_date, end_date, rebalancing, handle_missing
+        )
 
     yield _c
 
