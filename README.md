@@ -132,6 +132,70 @@ a. Lasso
 b. Ridge
 3. Neural Network Model
 
+Please refer to the docstrings for detailed explanation on each input parameter to the models.
+
+Step 1: Obtain Standardized Data
+```python
+
+y = GetFred(transform=True)
+data = y.get_fred_md()
+```
+
+Step 2: Instantiate an object of the required class :
+AR model : class AR_Model
+Lasso/Ridge : class Regularised_Regression_Model
+Neural Network : class Neural_Network
+
+Below I provide examples to instantiate each of these classes:
+```python
+model = AR_Model( data = y,
+                  max_lag = 100,
+                  start_date = pd.to_datetime('2010-01'),
+                  end_date = pd.to_datetime('2020-01'),
+                  dependent_variable_name = 'CPIAUCSL',
+                  window_size = '100',
+                  lag_patience=5,
+                  model_name="AR",
+                  handle_missing=0 )
+
+
+ model = Regularised_Regression_Model( data = y,
+                                      regularisation_type = 'Lasso',
+                                      model_lags = [2]*120,
+                                      start_date = pd.to_datetime('2010-01'),
+                                      end_date = pd.to_datetime('2020-01'),
+                                      dependent_variable_name = 'CPIAUCSL',
+                                      window_size = '100',
+                                      handle_missing=0 )
+
+ model = Neural_Network( data = y,
+                          max_iter = 100,
+                          start_date = pd.to_datetime('2010-01'),
+                          end_date = pd.to_datetime('2020-01'),
+                          dependent_variable_name = 'CPIAUCSL',
+                          hidden_layer_sizes = (50,20,30),
+                          activation = "relu"
+                          model_lags = [2]*120,
+                          window_size = '100',
+                          handle_missing=0 )
+
+```
+
+Step 3: Fit the model and obtain outputs
+```python
+model.fit()
+
+model.in_sample_error #gives the in sample error
+model.out_of_sample_error #gives the in out of sample error
+model.true #gives the true values used in regression models
+model.predicted #gives the predicted values
+```
+
+Step 4: Visualising results
+We implement a function to visualise the in sample and out of sample error of the model
+```python
+model.plot_insample_and_outofsample_error()
+```
 Please refer to test_fit() in tests/test_fred_regression.py for working examples.
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------

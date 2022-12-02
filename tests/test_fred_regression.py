@@ -8,10 +8,102 @@ import datetime
 from parameterized import parameterized
 
 
+def create_input(use_Fred_data=False, test_missing=False):
+
+    if test_missing:
+        x = [
+            pd.to_datetime("2010-01"),
+            pd.to_datetime("2010-02"),
+            pd.to_datetime("2010-03"),
+            pd.to_datetime("2010-04"),
+            pd.to_datetime("2010-05"),
+            pd.to_datetime("2010-06"),
+        ]
+
+        y = [np.nan, np.nan, 12, 100, 8, 1]
+        z = [np.nan, np.nan, 200, 2, 11, 2]
+
+        df = pd.DataFrame({"Date": x, "col1": y, "result": z})
+        df.set_index("Date", inplace=True)
+
+    elif use_Fred_data:
+        data = get_fred.GetFred()
+        df = data.get_fred_md()
+
+    else:
+
+        df = pd.DataFrame(
+            columns=["Date", "col1", "col2", "result"],
+            data=[
+                [pd.to_datetime("2010-01"), 1, 2, 4],
+                [pd.to_datetime("2010-02"), 2, 2, 6],
+                [pd.to_datetime("2010-03"), 3, 1, 7],
+                [pd.to_datetime("2010-04"), 1, 0, 2],
+                [pd.to_datetime("2010-05"), 5, 2, 10],
+                [pd.to_datetime("2010-06"), 4, 2, 10],
+            ],
+        )
+        df.set_index("Date", inplace=True)
+    return df
+
+
+class test_Fred_Regression(unittest.TestCase):
+    def c(
+        self,
+        data=create_input(),
+        start_date=pd.to_datetime("2010-03"),
+        end_date=pd.to_datetime("2010-05"),
+        dependent_variable_name="result",
+        window_size=2,
+        handle_missing=0,
+        model_name="please_specify",
+        frequency="monthly",
+    ):
+
+        fred_reg = fred_regression.FredRegression
+        return fred_reg(
+            data=data,
+            start_date=start_date,
+            end_date=end_date,
+            dependent_variable_name=dependent_variable_name,
+            window_size=window_size,
+            handle_missing=handle_missing,
+            frequency=frequency,
+            model_name=model_name,
+        )
+
+    def test_features_and_target(self):
+        df = create_input()
+        model = self.c(dependent_variable_name="result", data=df)
+
+        model.features_and_target()
+
+        self.assertEqual(len(model.target), 6)
+        self.assertEqual(len(model.features.axes[1]), 2)
+
+    def test_get_error(self):
+        model = self.c()
+        err = model.get_error(np.array([1, 2]), np.array([0, 1]))
+        self.assertEqual(err, 1)
+
+    @parameterized.expand([["0", 0], ["1", 1]])
+    def test_handle_missing(self, name, val):
+        df = create_input(test_missing=True)
+        model = self.c(
+            data=df,
+            handle_missing=val,
+            start_date=pd.to_datetime("2010-01"),
+            end_date=pd.to_datetime("2010-04"),
+        )
+
+        model._fill_missing_data()
+        assert df.notnull().values.any()
+
+
 class test_AR_Model(unittest.TestCase):
     def c(
         self,
-        data=None,
+        data=pd.DataFrame(),
         max_lag=1,
         start_date=pd.to_datetime("2020-01"),
         end_date=pd.to_datetime("2020-05"),
@@ -32,52 +124,13 @@ class test_AR_Model(unittest.TestCase):
             handle_missing=handle_missing,
         )
 
-    def create_input(self, use_Fred_data=False, test_missing=False):
-
-        if test_missing:
-            x = [
-                datetime.datetime(2022, 11, 6),
-                datetime.datetime(2022, 11, 7),
-                datetime.datetime(2022, 11, 8),
-                datetime.datetime(2022, 11, 9),
-                datetime.datetime(2022, 11, 10),
-                datetime.datetime(2022, 11, 11),
-            ]
-
-            y = [np.nan, np.nan, 12, 100, 8, 1]
-            z = [np.nan, np.nan, 200, 2, 11, 2]
-
-            df = pd.DataFrame({"Date": x, "column1": y, "column2": z})
-            df.set_index("Date", inplace=True)
-
-            return df
-
-        elif use_Fred_data:
-            data = get_fred.GetFred()
-            df = data.get_fred_md()
-
-        else:
-
-            df = pd.DataFrame(
-                columns=["Date", "col1", "col2", "result"],
-                data=[
-                    [pd.to_datetime("2010-01"), 1, 2, 4],
-                    [pd.to_datetime("2010-02"), 2, 2, 6],
-                    [pd.to_datetime("2010-03"), 3, 1, 7],
-                    [pd.to_datetime("2010-04"), 1, 0, 2],
-                    [pd.to_datetime("2010-05"), 5, 2, 10],
-                    [pd.to_datetime("2010-06"), 4, 2, 10],
-                ],
-            )
-        return df
-
     def test_class_initialisation(self):
-        df = self.create_input()
+        df = create_input()
         model = self.c(
             data=df,
             max_lag=3,
-            start_date=min(df.Date),
-            end_date=max(df.Date),
+            start_date=pd.to_datetime("2010-01"),
+            end_date=pd.to_datetime("2010-06"),
             dependent_variable_name="result",
         )
 
@@ -89,32 +142,8 @@ class test_AR_Model(unittest.TestCase):
         self.assertEqual(model.handle_missing, 0)
         self.assertEqual(model.max_lag, 3)
 
-    def test_features_and_target(self):
-
-        df = self.create_input()
-
-        model = self.c(dependent_variable_name="result", data=df)
-
-        model.features_and_target()
-
-        self.assertEqual(len(model.target), 6)
-        self.assertEqual(len(model.features.axes[1]), 3)
-
-    def test_get_error(self):
-        model = self.c()
-        err = model.get_error(np.array([1, 2]), np.array([0, 1]))
-        self.assertEqual(err, 1)
-
-    @parameterized.expand([["0", 0], ["1", 1]])
-    def test_handle_missing(self, name, val):
-        df = self.create_input(test_missing=True)
-        model = self.c(data=df, handle_missing=val)
-
-        model._fill_missing_data()
-        assert df.notnull().values.any()
-
     def test_fit(self):
-        df = self.create_input(use_Fred_data=True)
+        df = create_input(use_Fred_data=True)
         start = pd.to_datetime("2010-03")
         end = pd.to_datetime("2011-03")
         model = self.c(
@@ -132,7 +161,7 @@ class test_AR_Model(unittest.TestCase):
         self.assertEqual(len(model.lag_from_ar_model), nMonths)
         self.assertEqual(len(model.dates_tested), nMonths)
         self.assertEqual(len(model.predicted), nMonths)
-        self.assertEqual(len(model.targets), nMonths)
+        self.assertEqual(len(model.true), nMonths)
 
 
 class test_Regularised_Regression_Model(unittest.TestCase):
@@ -163,52 +192,13 @@ class test_Regularised_Regression_Model(unittest.TestCase):
             lambdas=lambdas,
         )
 
-    def create_input(self, use_Fred_data=False, test_missing=False):
-
-        if test_missing:
-            x = [
-                datetime.datetime(2022, 11, 6),
-                datetime.datetime(2022, 11, 7),
-                datetime.datetime(2022, 11, 8),
-                datetime.datetime(2022, 11, 9),
-                datetime.datetime(2022, 11, 10),
-                datetime.datetime(2022, 11, 11),
-            ]
-
-            y = [np.nan, np.nan, 12, 100, 8, 1]
-            z = [np.nan, np.nan, 200, 2, 11, 2]
-
-            df = pd.DataFrame({"Date": x, "column1": y, "column2": z})
-            df.set_index("Date", inplace=True)
-
-            return df
-
-        elif use_Fred_data:
-            data = get_fred.GetFred()
-            df = data.get_fred_md()
-
-        else:
-
-            df = pd.DataFrame(
-                columns=["Date", "col1", "col2", "result"],
-                data=[
-                    [pd.to_datetime("2010-01"), 1, 2, 4],
-                    [pd.to_datetime("2010-02"), 2, 2, 6],
-                    [pd.to_datetime("2010-03"), 3, 1, 7],
-                    [pd.to_datetime("2010-04"), 1, 0, 2],
-                    [pd.to_datetime("2010-05"), 5, 2, 10],
-                    [pd.to_datetime("2010-06"), 4, 2, 10],
-                ],
-            )
-        return df
-
     @parameterized.expand([["ridge", "Ridge"], ["lasso", "Lasso"]])
     def test_class_initialisation(self, name, reg_type):
-        df = self.create_input()
+        df = create_input()
         model = self.c(
             data=df,
-            start_date=min(df.Date),
-            end_date=max(df.Date),
+            start_date=pd.to_datetime("2010-01"),
+            end_date=pd.to_datetime("2010-06"),
             dependent_variable_name="result",
             regularisation_type=reg_type,
         )
@@ -222,33 +212,9 @@ class test_Regularised_Regression_Model(unittest.TestCase):
         self.assertEqual(len(model.model_lags), 2)
         self.assertEqual(len(model.lambdas), 1)
 
-    def test_features_and_target(self):
-
-        df = self.create_input()
-
-        model = self.c(dependent_variable_name="result", data=df)
-
-        model.features_and_target()
-
-        self.assertEqual(len(model.target), 6)
-        self.assertEqual(len(model.features.axes[1]), 3)
-
-    def test_get_error(self):
-        model = self.c()
-        err = model.get_error(np.array([1, 2]), np.array([0, 1]))
-        self.assertEqual(err, 1)
-
-    @parameterized.expand([["0", 0], ["1", 1]])
-    def test_handle_missing(self, name, val):
-        df = self.create_input(test_missing=True)
-        model = self.c(data=df, handle_missing=val)
-
-        model._fill_missing_data()
-        assert df.notnull().values.any()
-
     @parameterized.expand([["ridge", "Ridge"], ["lasso", "Lasso"]])
     def test_fit(self, name, reg_type):
-        df = self.create_input(use_Fred_data=True)
+        df = create_input(use_Fred_data=True)
         start = pd.to_datetime("2010-03")
         end = pd.to_datetime("2011-03")
         nMonths = round((end - start) / np.timedelta64(1, "M"))
@@ -271,7 +237,7 @@ class test_Regularised_Regression_Model(unittest.TestCase):
         self.assertEqual(len(model.dates_tested), nMonths)
         self.assertEqual(len(model.model_coef[0]), ncols * lag)
         self.assertEqual(len(model.predicted), nMonths)
-        self.assertEqual(len(model.targets), nMonths)
+        self.assertEqual(len(model.true), nMonths)
 
 
 class test_Neural_Network(unittest.TestCase):
@@ -304,52 +270,13 @@ class test_Neural_Network(unittest.TestCase):
             model_lags=model_lags,
         )
 
-    def create_input(self, use_Fred_data=False, test_missing=False):
-
-        if test_missing:
-            x = [
-                datetime.datetime(2022, 11, 6),
-                datetime.datetime(2022, 11, 7),
-                datetime.datetime(2022, 11, 8),
-                datetime.datetime(2022, 11, 9),
-                datetime.datetime(2022, 11, 10),
-                datetime.datetime(2022, 11, 11),
-            ]
-
-            y = [np.nan, np.nan, 12, 100, 8, 1]
-            z = [np.nan, np.nan, 200, 2, 11, 2]
-
-            df = pd.DataFrame({"Date": x, "column1": y, "column2": z})
-            df.set_index("Date", inplace=True)
-
-            return df
-
-        elif use_Fred_data:
-            data = get_fred.GetFred()
-            df = data.get_fred_md()
-
-        else:
-
-            df = pd.DataFrame(
-                columns=["Date", "col1", "col2", "result"],
-                data=[
-                    [pd.to_datetime("2010-01"), 1, 2, 4],
-                    [pd.to_datetime("2010-02"), 2, 2, 6],
-                    [pd.to_datetime("2010-03"), 3, 1, 7],
-                    [pd.to_datetime("2010-04"), 1, 0, 2],
-                    [pd.to_datetime("2010-05"), 5, 2, 10],
-                    [pd.to_datetime("2010-06"), 4, 2, 10],
-                ],
-            )
-        return df
-
     @parameterized.expand([["0", "relu", 100], ["1", "tanh", 10]])
     def test_class_initialisation(self, name, activation, max_iter):
-        df = self.create_input()
+        df = create_input()
         model = self.c(
             data=df,
-            start_date=min(df.Date),
-            end_date=max(df.Date),
+            start_date=pd.to_datetime("2010-01"),
+            end_date=pd.to_datetime("2010-06"),
             dependent_variable_name="result",
             activation=activation,
             hidden_layer_sizes=(1, 2),
@@ -365,33 +292,9 @@ class test_Neural_Network(unittest.TestCase):
         self.assertEqual(model.max_iter, max_iter)
         self.assertEqual(len(model.hidden_layer_sizes), 2)
 
-    def test_features_and_target(self):
-
-        df = self.create_input()
-
-        model = self.c(dependent_variable_name="result", data=df)
-
-        model.features_and_target()
-
-        self.assertEqual(len(model.target), 6)
-        self.assertEqual(len(model.features.axes[1]), 3)
-
-    def test_get_error(self):
-        model = self.c()
-        err = model.get_error(np.array([1, 2]), np.array([0, 1]))
-        self.assertEqual(err, 1)
-
-    @parameterized.expand([["0", 0], ["1", 1]])
-    def test_handle_missing(self, name, val):
-        df = self.create_input(test_missing=True)
-        model = self.c(data=df, handle_missing=val)
-
-        model._fill_missing_data()
-        assert df.notnull().values.any()
-
     @parameterized.expand([["0", "relu", 100, (10, 4)], ["1", "logistic", 150, (4, 3)]])
     def test_fit(self, name, activation, max_iter, hidden):
-        df = self.create_input(use_Fred_data=True)
+        df = create_input(use_Fred_data=True)
         start = pd.to_datetime("2010-03")
         end = pd.to_datetime("2011-03")
         nMonths = round((end - start) / np.timedelta64(1, "M"))
@@ -414,7 +317,7 @@ class test_Neural_Network(unittest.TestCase):
         self.assertEqual(len(model.out_of_sample_error), nMonths)
         self.assertEqual(len(model.dates_tested), nMonths)
         self.assertEqual(len(model.predicted), nMonths)
-        self.assertEqual(len(model.targets), nMonths)
+        self.assertEqual(len(model.true), nMonths)
 
 
 if __name__ == "__main__":
