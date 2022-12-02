@@ -13,6 +13,8 @@ from sklearn.decomposition import PCA
 import sys
 import pytest
 import math
+from scipy import sparse
+import cvxpy as cp
 
 
 # create data to test all functions
