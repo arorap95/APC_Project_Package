@@ -11,7 +11,8 @@ dependencies = [
     "scikit-learn",
     "matplotlib",
     "statsmodels",
-    "parameterized"
+    "parameterized",
+    "cvxpy"
 ]
 [project.optional-dependencies]
 test = ["pytest"]
