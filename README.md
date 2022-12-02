@@ -157,8 +157,8 @@ model = AR_Model( data = y,
                   lag_patience=5,
                   model_name="AR",
                   handle_missing=0 )
-                 
-                  
+
+
  model = Regularised_Regression_Model( data = y,
                                       regularisation_type = 'Lasso',
                                       model_lags = [2]*120,
@@ -167,18 +167,18 @@ model = AR_Model( data = y,
                                       dependent_variable_name = 'CPIAUCSL',
                                       window_size = '100',
                                       handle_missing=0 )
-                                      
+
  model = Neural_Network( data = y,
                           max_iter = 100,
                           start_date = pd.to_datetime('2010-01'),
                           end_date = pd.to_datetime('2020-01'),
                           dependent_variable_name = 'CPIAUCSL',
                           hidden_layer_sizes = (50,20,30),
-                          activation = "relu"                      
-                          model_lags = [2]*120,                        
+                          activation = "relu"
+                          model_lags = [2]*120,
                           window_size = '100',
-                          handle_missing=0 )                                                                                                   
-                                      
+                          handle_missing=0 )
+
 ```
 
 Step 3: Fit the model and obtain outputs
