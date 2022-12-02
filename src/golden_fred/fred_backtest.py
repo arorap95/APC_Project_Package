@@ -4,6 +4,9 @@ import datetime
 import warnings
 import sys
 from typing import Union, Tuple
+import datetime
+import warnings
+from typing import Union, Tuple
 
 
 class FredBacktest:
@@ -56,6 +59,8 @@ class FredBacktest:
         if end_date is None:
             end_date = data.index[-1]
 
+        assert end_date > start_date, "End date must be after the start date"
+
         assert start_date in data.index, "Start date not available in the data index"
         assert end_date in data.index, "End date not available in the data index"
         # -------------------------------------------------------------------------------------------------------
@@ -66,6 +71,10 @@ class FredBacktest:
         self.inputdata = data.loc[start_date:end_date]
         self.handle_missing = handle_missing
 
+        assert (
+            len(self.inputdata) > 2
+        ), "Must have at least 3 data points to compute statistics"
+
     def fred_compute_backtest(
         self, factors: np.array, initialweights: np.array, Tcosts: np.array
     ) -> pd.Series:
@@ -73,7 +82,7 @@ class FredBacktest:
         """
         Wrapper function called by the user to run a historical backtest of a strategy consisting of the factors
 
-        :param factors: array of data column names corresponding to the factor in the strategy
+        :param factors: array of data column names corresponding to the factors in the strategy
         :param weights: array of weights corresponding to each of the factors in the strategy
         :T-cost: array of T-costs corresponding to T-costs of trading each of the factors
         :return: pandas Series of statistics from the backtest
@@ -100,19 +109,12 @@ class FredBacktest:
         for Tcost in Tcosts:
             assert Tcost >= 0 and Tcost <= 1, "Tcost must be between 0-1 for each asset"
         # -------------------------------------------------------------------------------------------------------
-
-        initialweightsmap = {}
-        Tcostsmap = {}
-
-        for i, factor in enumerate(factors):
-            initialweightsmap[factor] = initialweights[i]
-            Tcostsmap[factor] = Tcosts[i]
-
-            self.factors = factors
-            self.initialweights = initialweightsmap
-            self.Tcosts = Tcostsmap
+        self.factors = np.array(factors)
+        self.initialweights = np.array(initialweights)
+        self.Tcosts = np.array(Tcosts)
 
         self._fillmissing()
+
         # compute returns
         self.returndata = self.inputdata.pct_change().fillna(0)
         self._run_backtest()
@@ -157,7 +159,7 @@ class FredBacktest:
         :return: self.cumulativevalue, self.turnover
 
         Steps:
-        For each date, compute the pre-rebalance dates basd on the corresponding returns
+        For each date, compute the pre-rebalance dates based on the corresponding returns
         Use the rebalancing trigger to convert pre-rebalance weights to post-rebalance weights
         If rebalancing occured, apply T costs to the turnover amounts
         Obtain final post-rebalance weights for the date
@@ -168,13 +170,8 @@ class FredBacktest:
         cumulativevalue = {}
         turnover = {}
 
-        for asset in self.initialweights.keys():
-            postrebal[asset] = {}
-            prerebal[asset] = {}
-
         # set starting weights
-        for asset in postrebal.keys():
-            postrebal[asset][self.startdate] = self.initialweights[asset]
+        postrebal[self.startdate] = self.initialweights
 
         # set initial starting value as 1
         cumulativevalue[self.startdate] = 1
@@ -187,40 +184,30 @@ class FredBacktest:
             turnover[alldates[i + 1]] = 0
 
             # apply returns
-            for asset in prerebal.keys():
-                prerebal[asset][alldates[i + 1]] = postrebal[asset][alldates[i]] * (
-                    1 + self.returndata.loc[alldates[i]][asset]
-                )
-                cumulativevalue[alldates[i + 1]] += prerebal[asset][alldates[i + 1]]
+            prerebal[alldates[i + 1]] = postrebal[alldates[i]] * (
+                1 + self.returndata.loc[alldates[i + 1]][self.factors]
+            )
+            cumulativevalue[alldates[i + 1]] = np.sum(prerebal[alldates[i + 1]])
 
             # apply rebalancing and turnover
             if self._is_rebal(i + 1):
-                for asset in postrebal.keys():
-                    postrebal[asset][alldates[i + 1]] = (
-                        cumulativevalue[alldates[i + 1]] * self.initialweights[asset]
-                    )
-                    currentturnover = (
-                        abs(
-                            postrebal[asset][alldates[i + 1]]
-                            - prerebal[asset][alldates[i + 1]]
-                        )
-                        * self.Tcosts[asset]
-                    )
-                    postrebal[asset][alldates[i + 1]] = (
-                        postrebal[asset][alldates[i + 1]] - currentturnover
-                    )
-                    turnover[alldates[i + 1]] = (
-                        turnover[alldates[i + 1]] + currentturnover
-                    )
-
+                postrebal[alldates[i + 1]] = (
+                    cumulativevalue[alldates[i + 1]] * self.initialweights
+                )
+                currentturnover = (
+                    abs(postrebal[alldates[i + 1]] - prerebal[alldates[i + 1]])
+                    * self.Tcosts
+                )
+                postrebal[alldates[i + 1]] = (
+                    postrebal[alldates[i + 1]] - currentturnover
+                )
                 turnover[alldates[i + 1]] = (
-                    turnover[alldates[i + 1]] / cumulativevalue[alldates[i + 1]]
+                    np.sum(currentturnover) / cumulativevalue[alldates[i + 1]]
                 )
 
             else:
-                for asset in postrebal.keys():
-                    postrebal[asset][alldates[i + 1]] = prerebal[asset][alldates[i + 1]]
-                    turnover[alldates[i + 1]] = 0
+                postrebal[alldates[i + 1]] = prerebal[alldates[i + 1]]
+                turnover[alldates[i + 1]] = 0
 
             self.cumulativevalues = pd.Series(cumulativevalue)
             self.turnover = pd.Series(turnover)
@@ -235,7 +222,7 @@ class FredBacktest:
         # risk metrics:
         returns = self.cumulativevalues.pct_change()[1:]
 
-        annualizedvol = np.std(returns) * np.sqrt(12)
+        annualizedvol = returns.std() * np.sqrt(12)
         stats["Annualized Vol (%)"] = annualizedvol
 
         Roll_Max = self.cumulativevalues.cummax()
@@ -243,8 +230,7 @@ class FredBacktest:
         Max_Drawdown = Drawdown.cummin()[-1]
         stats["Max Drawdown (%)"] = Max_Drawdown
         stats["Max DD from Base"] = min(self.cumulativevalues) - 1
-        var_95 = np.percentile(returns, 5)
-        var_95 = var_95 * np.sqrt(12)
+        var_95 = np.percentile(returns, 5) * np.sqrt(12)
         stats["95% VaR"] = var_95
 
         # return metrics
