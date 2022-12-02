@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from golden_fred import fred_regression
 from golden_fred import get_fred
-import fred_regression
-import get_fred
 import datetime
 from parameterized import parameterized
 
