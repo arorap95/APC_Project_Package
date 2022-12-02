@@ -12,11 +12,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import sys
 import pytest
+import math
 
 
 # create data to test all functions
 def create_input():
-    data = GetFred()
+    data = get_fred.GetFred()
     df = data.get_fred_md()
 
     return df
@@ -28,7 +29,7 @@ df = create_input()
 @pytest.fixture
 def c():
     def _c(df, start_date=None, end_date=None, rebalancing="monthly", handle_missing=1):
-        return FredBacktest(df, start_date, end_date, rebalancing, handle_missing)
+        return fred_backtest.FredBacktest(df, start_date, end_date, rebalancing, handle_missing)
 
     yield _c
 
