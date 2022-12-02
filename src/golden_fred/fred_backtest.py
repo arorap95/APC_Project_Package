@@ -189,7 +189,7 @@ class FredBacktest:
             # apply returns
             for asset in prerebal.keys():
                 prerebal[asset][alldates[i + 1]] = postrebal[asset][alldates[i]] * (
-                    1 + self.returndata.loc[alldates[i+1]][asset]
+                    1 + self.returndata.loc[alldates[i + 1]][asset]
                 )
                 cumulativevalue[alldates[i + 1]] += prerebal[asset][alldates[i + 1]]
 
