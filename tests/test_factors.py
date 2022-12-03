@@ -178,4 +178,4 @@ def test_optimal_factor(c, factorselection):
             np.round((explained_variance_ratio), decimals=4) * 100
         )
         drops = additional_explained_variance[:-1] / additional_explained_variance[1:]
-        assert myobject.optimalfactors == (-drops).argsort()[target] + 1  
+        assert myobject.optimalfactors == (-drops).argsort()[target] + 1
