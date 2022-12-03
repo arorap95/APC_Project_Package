@@ -81,7 +81,7 @@ Step 2: Run Factor Analysis with custom inputs (or can use default settings)
 factors = FredFactors(data, standardization=2, factorselection={1:90}, removeoutliers=True, handle_missing=1)
 
 #return PCA transformed data
-factors.getFredFactors()
+factors.get_fred_factors()
 ```
 
 Step 3: Extract other relevant outputs
