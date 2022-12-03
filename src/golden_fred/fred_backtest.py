@@ -292,7 +292,6 @@ class FredBacktest:
 
         self.stats = pd.Series(stats)
 
-
     def _run_regimefiltering(self):
         """
         Runs the L1 trend filtering algorithm to identify historical regimes of contraction (-1), and expansion (+1)
