@@ -265,10 +265,10 @@ class FredBacktest:
         annualizedvol = returns.std() * np.sqrt(12)
         stats["Annualized Vol (%)"] = annualizedvol
 
-        Roll_Max = self.cumulativevalues.cummax()
-        Drawdown = self.cumulativevalues / Roll_Max - 1.0
-        Max_Drawdown = Drawdown.cummin()[-1]
-        stats["Max Drawdown (%)"] = Max_Drawdown
+        roll_max = self.cumulativevalues.cummax()
+        drawdown = self.cumulativevalues / roll_max - 1.0
+        max_drawdown = drawdown.cummin()[-1]
+        stats["Max drawdown (%)"] = max_drawdown
         stats["Max DD from Base"] = min(self.cumulativevalues) - 1
         var_95 = np.percentile(returns, 5) * np.sqrt(12)
         stats["95% VaR"] = var_95
@@ -291,6 +291,7 @@ class FredBacktest:
         stats["Annualized Sharpe"] = round(sharpe, 2)
 
         self.stats = pd.Series(stats)
+
 
     def _run_regimefiltering(self):
         """
