@@ -19,12 +19,9 @@ class FredBacktest:
         end_date: Union[datetime.datetime, None] = None,
         rebalancing: str = "monthly",
         handle_missing: int = 1,
-    ) -> None:
+    ):
         """
-        Run a backtest on a strategy of FRED factors with weights and customized inputs provided by the user. Report all backtest statistics of the strategy
-
-        Also runs a L1 trend filtering algorithm on backtest data to identify regimes of contraction, expansion and trasition
-
+    
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
@@ -34,8 +31,8 @@ class FredBacktest:
         1: Fill missing values with mean of respective series
 
         Main functions are:
-        :fred_compute_backtest(): runs historical backtest and outputs statistics
-        :regime_filtering(): runs historical regime filtering and outputs regimes for each column of data
+        :fred_compute_backtest(): runs a backtest on a portfolio of FRED factors with weights and T costs provided by the user. Reports all backtest statistics of the strategy
+        :regime_filtering(): runs a L1 trend filtering algorithm on each column of data. Reports historical regimes of contraction, expansion and transition.
         """
 
         # Check that parameters are set correctly
