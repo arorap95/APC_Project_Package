@@ -22,17 +22,17 @@ class FredFactors:
 
         """
         Run Principal Component Analysis (PCA) on input data set and conduct factor analysis
-        
+
         INPUTS:
         Standardization is an integer in [0,1,2] representing standardization methods:
         0: No standardization
         1: Only demean but not scale
         2: Demean and scale
-        
+
         Maximum factors represents the maximum number of PCA factors to return:
         None: Returns all PCA factors
         Else: Input integer representing maximum number of factors to return
-        
+
         Factor Selection represents the method to select the optimal number of factors, subject to maximum factors:
         None: Returns all factors from PCA, subject to maximum
         Else: Input dictionary where keys are an integer in [0,1,2]:
@@ -42,7 +42,7 @@ class FredFactors:
             Where the Value is the specified total variance explained as specified by the user
             2: Biggest Drop Method - identify Kth PC such that r := arg max lambda(j) / lambda(j+1)
             Where the value is the specified target rank of the ratio (0= arg max)
-        
+
         Handle Missing is an integer in [0,1] representing how to handle missing data:
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
@@ -132,8 +132,8 @@ class FredFactors:
 
     def _remove_outliers(self):
         """
-        :param: removeoutliers boolean. 
-        True: removes outliers. 
+        :param: removeoutliers boolean.
+        True: removes outliers.
         False: does not remove outliers
         x is considered an outlier if: abs(x-median)>10*interquartile range
         :return: self.currentdata without outliers
@@ -152,7 +152,7 @@ class FredFactors:
 
     def _select_optimal_factors(self):
         """
-        Select optimal number of factors after PCA. 
+        Select optimal number of factors after PCA.
         :param: factorselection
         None: Default to maximum factors
         {0: x): Stop at Kth PC such that K+1th PC does not add more than x% to already explained variance
@@ -220,7 +220,7 @@ class FredFactors:
 
         elif self.handle_missing == 1:
             self.currentdata = self.currentdata.fillna(self.currentdata.mean())
-            
+
         warnings.warn(
             f"""Data columns have varying start dates and hence lengths. Choose start date carefully."""
         )
