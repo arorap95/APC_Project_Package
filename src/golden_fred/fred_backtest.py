@@ -268,7 +268,7 @@ class FredBacktest:
         roll_max = self.cumulativevalues.cummax()
         drawdown = self.cumulativevalues / roll_max - 1.0
         max_drawdown = drawdown.cummin()[-1]
-        stats["Max drawdown (%)"] = max_drawdown
+        stats["Max Drawdown (%)"] = max_drawdown
         stats["Max DD from Base"] = min(self.cumulativevalues) - 1
         var_95 = np.percentile(returns, 5) * np.sqrt(12)
         stats["95% VaR"] = var_95
