@@ -52,7 +52,7 @@ class FredBacktest:
             "monthly",
             "quarterly",
             "annually",
-        ], "Rebalancing input not recognized"
+        ], f"Rebalancing input {rebalancing=} not one of 'monthly', 'quarterly', 'annually'"
         assert isinstance(
             data.index, pd.DatetimeIndex
         ), "Index of input data must be a datetime index"
