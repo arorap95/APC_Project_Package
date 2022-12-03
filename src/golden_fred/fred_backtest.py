@@ -22,9 +22,9 @@ class FredBacktest:
     ) -> None:
         """
         Run a backtest on a strategy of FRED factors with weights and customized inputs provided by the user. Report all backtest statistics of the strategy
-        
+
         Also runs a L1 trend filtering algorithm on backtest data to identify regimes of contraction, expansion and trasition
-        
+
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
@@ -296,11 +296,11 @@ class FredBacktest:
         self.stats = pd.Series(stats)
 
     def _run_regimefiltering(self):
-        '''
+        """
         Runs the L1 trend filtering algorithm to identify historical regimes of contraction (-1), and expansion (+1)
         Uses a piecewise linear function
         Lambda regularization parameter is specified by the user
-        '''
+        """
         regimes = None
 
         for i, column in enumerate(self.columns):
@@ -320,7 +320,7 @@ class FredBacktest:
             prob.solve()
 
             # identify +1, 0, and -1 regimes as regions of positive and negative slopes, and 0 as transition (if any)
-            #piece-wise linear function
+            # piece-wise linear function
             slopes = np.diff(x.value)
             result = np.where(slopes < 0, -1, slopes)
             result = np.where(result > 0, 1, result)
