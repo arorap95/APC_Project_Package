@@ -21,9 +21,10 @@ class FredBacktest:
         handle_missing: int = 1,
     ) -> None:
         """
-        Run a backtest on a strategy of FRED factors with weights and customized inputs provided by the user.
-        Report all backtest statistics of the strategy
-
+        Run a backtest on a strategy of FRED factors with weights and customized inputs provided by the user. Report all backtest statistics of the strategy
+        
+        Also runs a L1 trend filtering algorithm on backtest data to identify regimes of contraction, expansion and trasition
+        
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
@@ -33,7 +34,8 @@ class FredBacktest:
         1: Fill missing values with mean of respective series
 
         Main functions are:
-        :param fred_compute_backtest(): runs backtest and outputs statistics
+        :fred_compute_backtest(): runs historical backtest and outputs statistics
+        :regime_filtering(): runs historical regime filtering and outputs regimes for each column of data
         """
 
         # Check that parameters are set correctly
@@ -87,7 +89,7 @@ class FredBacktest:
         :param factors: array of data column names corresponding to the factors in the strategy
         :param weights: array of weights corresponding to each of the factors in the strategy
         :T-cost: array of T-costs corresponding to T-costs of trading each of the factors
-        :return: pandas Series of statistics from the backtest
+        :return: pandas Series of statistics from the historical backtest
         """
 
         # Check that parameters are set correctly
@@ -134,8 +136,8 @@ class FredBacktest:
 
         :param columns: array of column names for regime filtering
         :param lambda_param: array of lambda regularization parameteres for L1 trend filtering
-        : return Pandas DataFrame: containing a historical time series of +1 to -1 for each column, corresponding to
-        expansion and contraction regimes respectively
+        : return Pandas DataFrame: containing a historical time series of [-1,1] for each column, corresponding to
+        [contraction, expansion] regimes respectively
         """
 
         # Check that parameters are set correctly
@@ -163,7 +165,7 @@ class FredBacktest:
 
         return self.regimes
 
-    def _is_rebal(self, date):
+    def _is_rebal(self, date) -> bool:
         """Uses index to check whether specified date is a rebalancing date
         :param: self.rebalancing
         return: boolean indicating whether the index corresponds to a rebalancing trigger"""
@@ -294,17 +296,22 @@ class FredBacktest:
         self.stats = pd.Series(stats)
 
     def _run_regimefiltering(self):
+        '''
+        Runs the L1 trend filtering algorithm to identify historical regimes of contraction (-1), and expansion (+1)
+        Uses a piecewise linear function
+        Lambda regularization parameter is specified by the user
+        '''
         regimes = None
 
         for i, column in enumerate(self.columns):
-            # Set up L1 regime filter algorithm
+            # Set up L1 regime filter algorithm using a difference matrix
             n = len(self.inputdata[column])
             one_vec = np.ones((1, n))
             D = sparse.spdiags(
                 np.vstack((one_vec, -2 * one_vec, one_vec)), range(3), m=n - 2, n=n
             ).toarray()  # spdiags(data, diags_to_set, m, n
 
-            # run the optimization using cvxpy
+            # run the L1 optimization using cvxpy
             y = self.inputdata[column].values
             lambd = self.lambdas[i]
             x = cp.Variable(n)
@@ -312,7 +319,8 @@ class FredBacktest:
             prob = cp.Problem(obj)
             prob.solve()
 
-            # identify +1 and -1 regimes as regions of positive and negative slopes, and 0 as transition
+            # identify +1, 0, and -1 regimes as regions of positive and negative slopes, and 0 as transition (if any)
+            #piece-wise linear function
             slopes = np.diff(x.value)
             result = np.where(slopes < 0, -1, slopes)
             result = np.where(result > 0, 1, result)
