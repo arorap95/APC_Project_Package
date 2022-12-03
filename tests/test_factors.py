@@ -60,12 +60,12 @@ def test_init(c, standardization):
     assert myobject.currentdata.equals(df)
 
 
-# test _removeoutliers function by comparing object output with outliers of sample data
+# test _remove_outliers function by comparing object output with outliers of sample data
 @pytest.mark.parametrize("removeoutliers", [True, False])
 def test_outliers(c, removeoutliers):
     myobject = c(df, removeoutliers=removeoutliers)
 
-    myobject._removeoutliers()
+    myobject._remove_outliers()
 
     if removeoutliers == False:
         assert myobject.currentdata.equals(df)
@@ -79,12 +79,12 @@ def test_outliers(c, removeoutliers):
         assert df_new.equals(myobject.currentdata)
 
 
-# test _fillmissing function
+# test _fill_missing function
 @pytest.mark.parametrize("handle_missing", [0, 1])
 def test_handlemissing(c, handle_missing):
     myobject = c(df, removeoutliers=True)
-    myobject._removeoutliers()
-    myobject._fillmissing()
+    myobject._remove_outliers()
+    myobject._fill_missing()
 
     assert myobject.currentdata.notnull().values.any()
 
@@ -93,8 +93,8 @@ def test_handlemissing(c, handle_missing):
 @pytest.mark.parametrize("standardization", [0, 1, 2])
 def test_standardization(c, standardization):
     myobject = c(df, standardization=standardization)
-    myobject._removeoutliers()
-    myobject._fillmissing()
+    myobject._remove_outliers()
+    myobject._fill_missing()
 
     scalar = myobject._standardize()
     scaleddata = pd.DataFrame(scalar.fit_transform(myobject.currentdata))
@@ -118,17 +118,17 @@ def test_standardization(c, standardization):
         assert (stds.gt(0.98) & stds.lt(1.2)).all()
 
 
-# test _runPCAalgorithm by comparing eigenvalues of sample data and eigenvalues of the object instance returned
+# test _run_PCA_algorithm by comparing eigenvalues of sample data and eigenvalues of the object instance returned
 def test_PCA(c):
     myobject = c(df)
-    myobject._removeoutliers()
-    myobject._fillmissing()
-    myobject._runPCAalgorithm()
+    myobject._remove_outliers()
+    myobject._fill_missing()
+    myobject._run_PCA_algorithm()
 
     # test _PCA manually
     myobject1 = c(df)
-    myobject1._removeoutliers()
-    myobject1._fillmissing()
+    myobject1._remove_outliers()
+    myobject1._fill_missing()
     scalar = myobject1._standardize()
     scaleddata = scalar.fit_transform(myobject1.currentdata)
     cov_mat = np.cov(scaleddata, rowvar=False)
@@ -141,15 +141,15 @@ def test_PCA(c):
 @pytest.mark.parametrize("factorselection", [{0: 3}, {1: 80}, {2: 0}])
 def test_optimal_factor(c, factorselection):
     myobject = c(df, factorselection=factorselection)
-    myobject._removeoutliers()
-    myobject._fillmissing()
-    myobject._runPCAalgorithm()
-    myobject._selectoptimalfactors()
+    myobject._remove_outliers()
+    myobject._fill_missing()
+    myobject._run_PCA_algorithm()
+    myobject._select_optimal_factors()
 
-    # test _selectoptimalfactors manually
+    # test _select_optimal_factors manually
     myobject1 = c(df, factorselection=factorselection)
-    myobject1._removeoutliers()
-    myobject1._fillmissing()
+    myobject1._remove_outliers()
+    myobject1._fill_missing()
     scalar = myobject1._standardize()
     scaleddata = scalar.fit_transform(myobject1.currentdata)
     cov_mat = np.cov(scaleddata, rowvar=False)
