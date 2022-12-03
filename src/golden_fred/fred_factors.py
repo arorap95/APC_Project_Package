@@ -16,32 +16,34 @@ class FredFactors:
         standardization: int = 2,
         maxfactors: Union[int, None] = None,
         factorselection: Union[dict, None] = None,
-        removeoutliers: bool = True,
+        removeoutliers: bool = False,
         handle_missing: int = 1,
-    ) -> None:
+    ):
 
         """
-        Run PCA on input data set and conduct factor analysis
-
+        Run Principal Component Analysis (PCA) on input data set and conduct factor analysis
+        
         INPUTS:
-
-        Standardization is an integer in [0,1,2] representing:
+        Standardization is an integer in [0,1,2] representing standardization methods:
         0: No standardization
         1: Only demean but not scale
         2: Demean and scale
-
-        Maximum factors is an integer representing the maximum factors
-
-        Factor Selection, if not None, is a dictionary representing the method to select optimal number of factors
-        With Keys in [0,1,2]:
-        0: Stop at Kth PC such that K+1th PC does not add more than a specified value of to the already explained variance
-        Where the Value is the specified additional variance explained as specified by the user
-        1: Stop at Kth PC such that the total variance explained  by the components is a specified value
-        Where the Value is the specified total variance explained as specified by the user
-        2: Biggest Drop Method - identify Kth PC such that r := arg max lambda(j) / lambda(j+1)
-        Where the value is the specified target rank of the ratio (0= arg max)
-
-        Handle Missing is an integer in [0,1] representing:
+        
+        Maximum factors represents the maximum number of PCA factors to return:
+        None: Returns all PCA factors
+        Else: Input integer representing maximum number of factors to return
+        
+        Factor Selection represents the method to select the optimal number of factors, subject to maximum factors:
+        None: Returns all factors from PCA, subject to maximum
+        Else: Input dictionary where keys are an integer in [0,1,2]:
+            0: Stop at Kth PC such that K+1th PC does not add more than a specified value of to the already explained variance
+            Where the Value is the specified additional variance explained as specified by the user
+            1: Stop at Kth PC such that the total variance explained  by the components is a specified value
+            Where the Value is the specified total variance explained as specified by the user
+            2: Biggest Drop Method - identify Kth PC such that r := arg max lambda(j) / lambda(j+1)
+            Where the value is the specified target rank of the ratio (0= arg max)
+        
+        Handle Missing is an integer in [0,1] representing how to handle missing data:
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
         """
@@ -94,20 +96,20 @@ class FredFactors:
         self.handle_missing = handle_missing
         self.currentdata = inputdata.copy()
 
-    def getFredFactors(self):
+    def get_fred_factors(self) -> pd.DataFrame:
         """
         Wrapper Function called by the user. Processes input data by removing outliers, fills missing values,
         runs PCA, and selects optimal number of factors.
-        :return: self.factors, user can access other metrics on self
+        :return: self.factors
         """
-        self._removeoutliers()
-        self._fillmissing()
-        self._runPCAalgorithm()
-        self._selectoptimalfactors()
+        self._remove_outliers()
+        self._fill_missing()
+        self._run_PCA_algorithm()
+        self._select_optimal_factors()
 
         return self.factors
 
-    def _standardize(self):
+    def _standardize(self) -> sklearn.preprocessing.StandardScaler:
         """
         Standardizes data per user specification.
         :param: standardization
@@ -128,10 +130,11 @@ class FredFactors:
 
         return scaler
 
-    def _removeoutliers(self):
+    def _remove_outliers(self):
         """
-        Remove outliers.
-        :param: removeoutliers
+        :param: removeoutliers boolean. 
+        True: removes outliers. 
+        False: does not remove outliers
         x is considered an outlier if: abs(x-median)>10*interquartile range
         :return: self.currentdata without outliers
         """
@@ -147,11 +150,11 @@ class FredFactors:
             self.currentdata = self.currentdata[~outliers]
             self.outliers = outliers.sum()
 
-    def _selectoptimalfactors(self):
+    def _select_optimal_factors(self):
         """
-        Select optimal number of factors after PCA
+        Select optimal number of factors after PCA. 
         :param: factorselection
-        None: Default to max factors
+        None: Default to maximum factors
         {0: x): Stop at Kth PC such that K+1th PC does not add more than x% to already explained variance
         {1:y}: Stop at Kth PC such that the total variance explained  by the components is y%
         {2: z}: Identify Kth PC such that r := arg max (z) lambda(j) / lambda(j+1) where z=0 corresponds to the maximum
@@ -197,7 +200,7 @@ class FredFactors:
                 :optimalfactors
             ]
 
-    def _fillmissing(self):
+    def _fill_missing(self):
         """
         Fill missing values
         :param: handle_missing
@@ -217,8 +220,12 @@ class FredFactors:
 
         elif self.handle_missing == 1:
             self.currentdata = self.currentdata.fillna(self.currentdata.mean())
+            
+        warnings.warn(
+            f"""Data columns have varying start dates and hence lengths. Choose start date carefully."""
+        )
 
-    def _runPCAalgorithm(self):
+    def _run_PCA_algorithm(self):
         """
         Steps to run PCA on self.currentdata:
         1) standardize data
@@ -229,7 +236,6 @@ class FredFactors:
                  self.components: PCA components,
                  self.eigenvalues: PCA eigenvalues
                  self.explained_variance_ratio: % explained variance of PCA eigenvalues
-
         """
         col_names = list(self.original_input)
         index = self.original_input.index
