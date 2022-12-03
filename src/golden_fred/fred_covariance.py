@@ -9,16 +9,16 @@ class CovarianceFred:
     def __init__(
         self,
         data: pd.DataFrame,
-    ): 
+    ):
 
         """Compute the covariance matrix of Fred factors with options for various techniques available
         :param: FRED-MD data
-        
+
         4 functions may be called by the user:
         sample_covariance(): compute raw covariance matrix of data
         threshold_covariance(): compute sample covariance matrix of data with a minimum correlation theshold specified by user
         positive_semidefinite_method1(): converts the sample covariance matrix to a positive semidefinite matrix by setting all negative eigenvalues to 0
-        positive_semidefinite_method1(): converts the sample covariance matrix to a positive semidefinite matrix by setting (sample_cov + abs(lambda_min)*I) / 1+abs(lambda_min)        
+        positive_semidefinite_method1(): converts the sample covariance matrix to a positive semidefinite matrix by setting (sample_cov + abs(lambda_min)*I) / 1+abs(lambda_min)
         """
 
         self.originaldata = data
