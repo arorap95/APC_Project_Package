@@ -11,8 +11,14 @@ class CovarianceFred:
         data: pd.DataFrame,
     ):
 
-        """Compute the covariance matrix of Fred factors with options for various techniques
+        """Compute the covariance matrix of Fred factors with options for various techniques available
         :param: FRED-MD data
+
+        4 functions may be called by the user:
+        sample_covariance(): compute raw covariance matrix of data
+        threshold_covariance(): compute sample covariance matrix of data with a minimum correlation theshold specified by user
+        positive_semidefinite_method1(): converts the sample covariance matrix to a positive semidefinite matrix by setting all negative eigenvalues to 0
+        positive_semidefinite_method1(): converts the sample covariance matrix to a positive semidefinite matrix by setting (sample_cov + abs(lambda_min)*I) / 1+abs(lambda_min)
         """
 
         self.originaldata = data
@@ -26,7 +32,8 @@ class CovarianceFred:
         return self.covariancematrix
 
     def threshold_covariance(self, correlationthreshold=0.01) -> pd.DataFrame:
-        """Compute covariance matrix with thresholding of a minimum correlation between any 2 assets
+        """Compute covariance matrix with thresholding of a minimum correlation between any 2 assets.
+        Correlation of any assets below the minimum threshold is replaced by 0
         :param correlationthreshold: correlation threshold integer
         :return: Pandas DataFrame"""
 
@@ -42,7 +49,7 @@ class CovarianceFred:
 
     def positive_semidefinite_method1(self, correlationthreshold=0.0) -> pd.DataFrame:
         """Compute covariance matrix with thresholding and making sure that the matrix is positive definite
-        The method involves setting the eigenvalues of the matrix as max(0, eigenvalues)
+        The method sets the eigenvalues of the matrix as max(0, eigenvalues)
         :param correlationthreshold: correlation threshold integer
         :return: Pandas DataFrame"""
 
@@ -70,7 +77,7 @@ class CovarianceFred:
 
     def positive_semidefinite_method2(self, correlationthreshold=0.0) -> pd.DataFrame:
         """Compute covariance matrix with thresholding and making sure that the matrix is positive definite
-        The method involves setting the sample covariance matrix = (sample_cov + lambda_min*I) / 1+lambda_min
+        The method sets the covariance matrix = (sample_cov + abs(lambda_min)*I) / 1+abs(lambda_min)
         :param correlationthreshold: correlation threshold integer
         :return: Pandas DataFrame"""
 
