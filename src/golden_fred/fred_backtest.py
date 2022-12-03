@@ -21,7 +21,7 @@ class FredBacktest:
         handle_missing: int = 1,
     ):
         """
-    
+
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
