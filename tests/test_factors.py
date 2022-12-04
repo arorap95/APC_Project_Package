@@ -79,7 +79,7 @@ def test_outliers(c, removeoutliers):
         assert df_new.equals(myobject.currentdata)
 
 
-# test _fill_missing function 
+# test _fill_missing function
 @pytest.mark.parametrize("handle_missing", [0, 1])
 def test_handlemissing(c, handle_missing):
     myobject = c(df, removeoutliers=True)
@@ -138,7 +138,7 @@ def test_PCA(c):
     assert (np.round(sorted(w), 3) == np.round(sorted(myobject.eigenvalues), 3)).all()
 
 
-#test factor selectioh method via parametrization of different potential methods
+# test factor selectioh method via parametrization of different potential methods
 @pytest.mark.parametrize("factorselection", [{0: 3}, {1: 80}, {2: 0}])
 def test_optimal_factor(c, factorselection):
     myobject = c(df, factorselection=factorselection)
