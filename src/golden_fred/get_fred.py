@@ -404,7 +404,7 @@ class GetFred:
                 raise Exception(
                     f"Vintage {self.vintage} too far into the future. Request vintage=current for latest data"
                 )
-                
+
     def _check_dates(self):
         """
         A verification function to check if start and end dates are legitimate
