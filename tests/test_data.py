@@ -75,14 +75,16 @@ def test_vintage_start(c, vintage):
     assert df.index.max() <= pd.Timestamp(datetime.date(int(year), int(mon), 1))
     assert df.index.min() >= pd.Timestamp("1959-01-01")  # default start date of FRED-MD
 
+
 def test_vintage_current(c):
     """
     Do the test above on the 'current' vintage'
     """
-    myobject = c(vintage='current')
+    myobject = c(vintage="current")
     df = myobject.get_fred_md()
     assert df.index.max() <= datetime.today()
-    assert df.index.min() >= pd.Timestamp('1959-01-01')
+    assert df.index.min() >= pd.Timestamp("1959-01-01")
+
 
 @pytest.mark.parametrize("vintage", ["random", "2017-13", "2300-04"])
 def test_vintage_format(c, vintage):
