@@ -28,7 +28,7 @@ def create_input():
 
 df = create_input()
 
-# create fixture that generates instance of the class
+# create fixture that generates instance of the Covariance class
 @pytest.fixture
 def c():
     def _c(df):
@@ -41,14 +41,14 @@ def test_init(c):
     myobject = c(df)
     assert myobject.originaldata.equals(df)
 
-
+#test that covariance matrices function as expected using random thresholds
 def test_threshold_covaraince(c):
     myobject = c(df)
     threshold = np.random.random()
     covmtx = myobject.threshold_covariance(correlationthreshold=threshold)
     assert covmtx[covmtx > 0].min().min() >= threshold
 
-
+#test that the covariance matrix is positive semi-definite
 def test_positivedefinite(c):
     myobject = c(df)
     threshold = np.random.random()
