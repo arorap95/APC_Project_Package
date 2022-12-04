@@ -82,7 +82,7 @@ def test_vintage_current(c):
     """
     myobject = c(vintage="current")
     df = myobject.get_fred_md()
-    assert df.index.max() <= datetime.date.today()
+    assert df.index.max() <= pd.Timestamp(datetime.date.today())
     assert df.index.min() >= pd.Timestamp("1959-01-01")
 
 
