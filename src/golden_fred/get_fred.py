@@ -27,11 +27,12 @@ class GetFred:
         :param get_fred_md(): pulls FRED MD data
         :param get_fred_qd(): pulls FRED QD data
         :param combine_fred(): combines FRED MD and FRED QD data using fuzzy match technique
-        :param get_appendix(): pulls appendix from the site with metadata
+        :param get_appendix(): pulls appendix from the site with metadata; pulls only updated version
         """
         self.transform = transform
         self.start_date = start_date
         self.end_date = end_date
+        self._check_dates()
         self.vintage = vintage  # if not default "current" MUST be YYYY-MM
         self._check_vintage()
         self.url_format = "https://files.stlouisfed.org/files/htdocs/fred-md/"
@@ -403,3 +404,23 @@ class GetFred:
                 raise Exception(
                     f"Vintage {self.vintage} too far into the future. Request vintage=current for latest data"
                 )
+
+    def _check_dates(self):
+        """
+        A verification function to check if start and end dates are legitimate
+        :return: warnings for erroneous dates
+        """
+        if self.start_date is None:
+            pass
+        elif self.start_date <= datetime.date(1959, 1, 1):
+            warnings.warn(
+                f"FRED-MD and QD data not available before 1959. Removing start_date filter..."
+            )
+            self.start_date = None
+        if self.end_date is None:
+            pass
+        elif self.end_date >= datetime.date.today():
+            warnings.warn(
+                f"Specified end_date {self.end_date} greater than current date. Removing end_date filter..."
+            )
+            self.end_date = None
