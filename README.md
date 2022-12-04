@@ -74,7 +74,7 @@ data_combined.tail()
 #### See appendix (e.g., background information provided by FRED-MD and FRED-QD authors)
 ```python
 y = GetFred()
-y.get_appendix(frequency='monthly')
+y.get_appendix(freq='monthly')
 ```
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
