@@ -21,11 +21,14 @@ class FredBacktest:
         handle_missing: int = 1,
     ):
         """
-
+        Conduct various historical analysis on FRED data. 2 types of data analysis tools available:
+        - Backtest strategies and compute statistics
+        - Conduct regime filtering analysis
+        
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
-        :param rebalancing: rebalancing technique for backtest. Options are: monthly, quarterly, yearly, ntz (trade zones)
+        :param rebalancing: rebalancing technique for historical backtest. Options are: monthly, quarterly, yearly, ntz (trade zones)
         :param handle_missing: is an integer in [0,1] representing:
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
@@ -81,7 +84,7 @@ class FredBacktest:
     ) -> pd.Series:
 
         """
-        Wrapper function called by the user to run a historical backtest of a strategy consisting of the factors
+        Wrapper function called by the user to run a historical backtest on a portfolio of FRED factors with weights and T costs provided by the user. Reports all backtest statistics
 
         :param factors: array of data column names corresponding to the factors in the strategy
         :param weights: array of weights corresponding to each of the factors in the strategy
@@ -128,12 +131,11 @@ class FredBacktest:
     ) -> pd.DataFrame:
 
         """
-        Wrapper function called by the user to extract historical regimes.
-        Runs a L1 trend-filtering algorithm
+        Wrapper function called by the user to run a L1 trend filtering algorithm on each column of data. Reports historical regimes of contraction, expansion and transition
 
         :param columns: array of column names for regime filtering
         :param lambda_param: array of lambda regularization parameteres for L1 trend filtering
-        : return Pandas DataFrame: containing a historical time series of [-1,1] for each column, corresponding to
+        :return Pandas DataFrame: containing a historical time series of [-1,1] for each column, corresponding to
         [contraction, expansion] regimes respectively
         """
 
@@ -180,7 +182,7 @@ class FredBacktest:
 
     def _fillmissing(self):
         """
-        Fill missing values
+        Fill missing values method
         :param: handle_missing
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
@@ -199,10 +201,10 @@ class FredBacktest:
         :return: self.cumulativevalue, self.turnover
 
         Steps:
-        For each date, compute the pre-rebalance dates based on the corresponding returns
-        Use the rebalancing trigger to convert pre-rebalance weights to post-rebalance weights
-        If rebalancing occured, apply T costs to the turnover amounts
-        Obtain final post-rebalance weights for the date
+        1) For each date, compute the pre-rebalance dates based on the corresponding returns
+        2) Use the rebalancing trigger to convert pre-rebalance weights to post-rebalance weights
+        3) If rebalancing occured, apply T costs to the turnover amounts
+        4) Obtain final post-rebalance weights for the date
         """
 
         postrebal = {}
@@ -218,7 +220,8 @@ class FredBacktest:
         turnover[self.startdate] = 0
 
         alldates = self.inputdata.index
-
+        
+        #Run Backtest
         for i in range(len(alldates) - 1):
             cumulativevalue[alldates[i + 1]] = 0
             turnover[alldates[i + 1]] = 0
@@ -229,7 +232,7 @@ class FredBacktest:
             )
             cumulativevalue[alldates[i + 1]] = np.sum(prerebal[alldates[i + 1]])
 
-            # apply rebalancing and turnover
+            # apply rebalancing and turnover if rebalancing triggered
             if self._is_rebal(i + 1):
                 postrebal[alldates[i + 1]] = (
                     cumulativevalue[alldates[i + 1]] * self.initialweights
@@ -300,6 +303,7 @@ class FredBacktest:
         """
         regimes = None
 
+        #run the optimization on each column specified by the user
         for i, column in enumerate(self.columns):
             # Set up L1 regime filter algorithm using a difference matrix
             n = len(self.inputdata[column])
