@@ -35,6 +35,10 @@ def test_init(c, start_date):
 
 @pytest.mark.parametrize("transf_code", [1, 2, 3, 4, 5, 6, 7])
 def test_stationarity(c, transf_code):
+    """
+    It is important to note that these functions correspond to the stationarity functions
+    in the FRED-MD and FRED-QD appendices. See those files or get_fred.get_appendix()
+    """
     myobject = c()
     if transf_code == 1:
         manual_transf = sample_data
@@ -70,6 +74,16 @@ def test_vintage_start(c, vintage):
     year, mon = vintage.split("-")
     assert df.index.max() <= pd.Timestamp(datetime.date(int(year), int(mon), 1))
     assert df.index.min() >= pd.Timestamp("1959-01-01")  # default start date of FRED-MD
+
+
+def test_vintage_current(c):
+    """
+    Do the test above on the 'current' vintage'
+    """
+    myobject = c(vintage="current")
+    df = myobject.get_fred_md()
+    assert df.index.max() <= pd.Timestamp(datetime.date.today())
+    assert df.index.min() >= pd.Timestamp("1959-01-01")
 
 
 @pytest.mark.parametrize("vintage", ["random", "2017-13", "2300-04"])
