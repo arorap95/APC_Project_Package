@@ -27,7 +27,7 @@ def create_input():
 
 df = create_input()
 
-# create fixture that generates instance of the class
+# create fixture that generates instance of the Backtest class
 @pytest.fixture
 def c():
     def _c(df, start_date=None, end_date=None, rebalancing="monthly", handle_missing=1):
@@ -38,12 +38,14 @@ def c():
     yield _c
 
 
+# test whether all rebalancing techniques function
 @pytest.mark.parametrize("rebalancing", ["monthly", "quarterly", "annually"])
 def test_init(c, rebalancing):
     myobject = c(df, rebalancing=rebalancing)
     assert myobject.inputdata.equals(df)
 
 
+# test both handle_missing parameters function
 @pytest.mark.parametrize("handle_missing", [0, 1])
 def test_fill(c, handle_missing):
     myobject = c(df, handle_missing=handle_missing)
@@ -133,6 +135,7 @@ def test_backtest(c):
     )
 
 
+# test regime filtering outputs are as expected
 def test_regime(c):
     myobject = c(df)
     myobject._fillmissing()

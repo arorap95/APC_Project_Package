@@ -29,7 +29,7 @@ def create_input():
 
 df = create_input()
 
-# create fixture that generates instance of the class
+# create fixture that generates instance of the Factors class
 @pytest.fixture
 def c():
     def _c(
@@ -89,7 +89,7 @@ def test_handlemissing(c, handle_missing):
     assert myobject.currentdata.notnull().values.any()
 
 
-# test _standardize function
+# test _standardize function using all potential parameters
 @pytest.mark.parametrize("standardization", [0, 1, 2])
 def test_standardization(c, standardization):
     myobject = c(df, standardization=standardization)
@@ -138,6 +138,7 @@ def test_PCA(c):
     assert (np.round(sorted(w), 3) == np.round(sorted(myobject.eigenvalues), 3)).all()
 
 
+# test factor selectioh method via parametrization of different potential methods
 @pytest.mark.parametrize("factorselection", [{0: 3}, {1: 80}, {2: 0}])
 def test_optimal_factor(c, factorselection):
     myobject = c(df, factorselection=factorselection)

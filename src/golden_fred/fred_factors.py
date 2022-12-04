@@ -31,19 +31,23 @@ class FredFactors:
 
         Maximum factors represents the maximum number of PCA factors to return:
         None: Returns all PCA factors
-        Else: Input integer representing maximum number of factors to return
+        Else: Input is an integer representing maximum number of factors to return
 
         Factor Selection represents the method to select the optimal number of factors, subject to maximum factors:
         None: Returns all factors from PCA, subject to maximum
-        Else: Input dictionary where keys are an integer in [0,1,2]:
+        Else: Input is a dictionary where keys are an integer in [0,1,2]:
             0: Stop at Kth PC such that K+1th PC does not add more than a specified value of to the already explained variance
-            Where the Value is the specified additional variance explained as specified by the user
+            Where the Value in the dictionary is the specified additional variance explained (as specified by the user)
             1: Stop at Kth PC such that the total variance explained  by the components is a specified value
-            Where the Value is the specified total variance explained as specified by the user
+            Where the Value in the dictionary is the specified total variance explained (as specified by the user)
             2: Biggest Drop Method - identify Kth PC such that r := arg max lambda(j) / lambda(j+1)
-            Where the value is the specified target rank of the ratio (0= arg max)
+            Where the Value in the dictionary is the specified target rank of the ratio (0= arg max)
 
-        Handle Missing is an integer in [0,1] representing how to handle missing data:
+        Remove outliers is a boolean where:
+        True: Remove outliers
+        False Does not remove outliers
+
+        Handle Missing Method is an integer in [0,1] representing how to handle missing data:
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
         """
@@ -158,10 +162,10 @@ class FredFactors:
         {0: x): Stop at Kth PC such that K+1th PC does not add more than x% to already explained variance
         {1:y}: Stop at Kth PC such that the total variance explained  by the components is y%
         {2: z}: Identify Kth PC such that r := arg max (z) lambda(j) / lambda(j+1) where z=0 corresponds to the maximum
-        :return: self.optimalfactors: optimal number of factors,
-                 self.factors: PCA factors with optimal number of factors
-                 self.components: PCA components with optimal number of factors
-                 self.eigenvalues = PCA eigenvalues with optimal number of factors
+        :return: self.optimalfactors: optimal number of factors. This is the min(optimal factors as per factor selection method, maximum factors specified)
+                 self.factors: PCA factors [with optimal number of factors]
+                 self.components: PCA components [with optimal number of factors]
+                 self.eigenvalues: PCA eigenvalues [with optimal number of factors]
         """
 
         if self.factorselection is not None:
@@ -178,6 +182,8 @@ class FredFactors:
                 cumvar = np.cumsum(
                     np.round(self.explained_variance_ratio, decimals=4) * 100
                 )
+
+                # edge case - if target is 100% explained variance, return all factors
                 if target == 100:
                     optimalfactors = (self.factors).shape[1]
                 else:
@@ -236,8 +242,8 @@ class FredFactors:
     def _run_PCA_algorithm(self):
         """
         Steps to run PCA on self.currentdata:
-        1) standardize data
-        2) run PCA with maximum factors = maxfactors
+        1) Standardize data
+        2) Run PCA with maximum factors = maxfactors
         3) Unstandardize data
         :return: self.factors: PCA factors,
                  self.filleddata: self.originaldata with missing values replaced by factor projections
