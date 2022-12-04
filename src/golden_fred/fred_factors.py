@@ -42,7 +42,7 @@ class FredFactors:
             Where the Value in the dictionary is the specified total variance explained (as specified by the user)
             2: Biggest Drop Method - identify Kth PC such that r := arg max lambda(j) / lambda(j+1)
             Where the Value in the dictionary is the specified target rank of the ratio (0= arg max)
-            
+
         Remove outliers is a boolean where:
         True: Remove outliers
         False Does not remove outliers
@@ -182,8 +182,8 @@ class FredFactors:
                 cumvar = np.cumsum(
                     np.round(self.explained_variance_ratio, decimals=4) * 100
                 )
-                
-                #edge case - if target is 100% explained variance, return all factors
+
+                # edge case - if target is 100% explained variance, return all factors
                 if target == 100:
                     optimalfactors = (self.factors).shape[1]
                 else:
