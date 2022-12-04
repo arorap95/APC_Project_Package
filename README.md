@@ -169,25 +169,25 @@ model = AR_Model( data = data,
                   handle_missing=0 )
 
 
- model = Regularised_Regression_Model( data = data,
-                                      regularisation_type = 'Lasso',
-                                      model_lags = [2]*120,
-                                      start_date = pd.to_datetime('2010-01'),
-                                      end_date = pd.to_datetime('2020-01'),
-                                      dependent_variable_name = 'CPIAUCSL',
-                                      window_size = 100,
-                                      handle_missing=0 )
+model = Regularised_Regression_Model( data = data,
+                                    regularisation_type = 'Lasso',
+                                    model_lags = [2]*120,
+                                    start_date = pd.to_datetime('2010-01'),
+                                    end_date = pd.to_datetime('2020-01'),
+                                    dependent_variable_name = 'CPIAUCSL',
+                                    window_size = 100,
+                                    handle_missing=0 )
 
- model = Neural_Network( data = data,
-                          max_iter = 100,
-                          start_date = pd.to_datetime('2010-01'),
-                          end_date = pd.to_datetime('2020-01'),
-                          dependent_variable_name = 'CPIAUCSL',
-                          hidden_layer_sizes = (50,20,30),
-                          activation = "relu",
-                          model_lags = [2]*120,
-                          window_size = 100,
-                          handle_missing=0 )
+model = Neural_Network( data = data,
+                        max_iter = 100,
+                        start_date = pd.to_datetime('2010-01'),
+                        end_date = pd.to_datetime('2020-01'),
+                        dependent_variable_name = 'CPIAUCSL',
+                        hidden_layer_sizes = (50,20,30),
+                        activation = "relu",
+                        model_lags = [2]*120,
+                        window_size = 100,
+                        handle_missing=0 )
 
 ```
 
