@@ -24,7 +24,7 @@ class FredBacktest:
         Conduct various historical analysis on FRED data. 2 types of data analysis tools available:
         - Backtest strategies and compute statistics
         - Conduct regime filtering analysis
-        
+
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
@@ -220,8 +220,8 @@ class FredBacktest:
         turnover[self.startdate] = 0
 
         alldates = self.inputdata.index
-        
-        #Run Backtest
+
+        # Run Backtest
         for i in range(len(alldates) - 1):
             cumulativevalue[alldates[i + 1]] = 0
             turnover[alldates[i + 1]] = 0
@@ -303,7 +303,7 @@ class FredBacktest:
         """
         regimes = None
 
-        #run the optimization on each column specified by the user
+        # run the optimization on each column specified by the user
         for i, column in enumerate(self.columns):
             # Set up L1 regime filter algorithm using a difference matrix
             n = len(self.inputdata[column])
