@@ -28,7 +28,7 @@ class FredBacktest:
         :param data: cleaned Fred Data Monthly Data outputted from GetFred()
         :param start_date: start date for backtest
         :param end_date: end date for backtest
-        :param rebalancing: rebalancing technique for historical backtest. Options are: monthly, quarterly, yearly, ntz (trade zones)
+        :param rebalancing: rebalancing technique for historical backtest. Options are: monthly, quarterly, annually
         :param handle_missing: is an integer in [0,1] representing:
         0: Forward Fill followed by Backward Fill missing values
         1: Fill missing values with mean of respective series
