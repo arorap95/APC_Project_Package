@@ -158,7 +158,7 @@ Neural Network : class Neural_Network
 
 Below I provide examples to instantiate each of these classes with some dummy parameter values
 ```python
-#AR_model 
+#AR_model
 model_ar = AR_Model( data = data,
                   max_lag = 50,
                   start_date = pd.to_datetime('2000-01'),
@@ -178,7 +178,7 @@ model_reg = Regularised_Regression_Model( data = data,
                                     dependent_variable_name = 'CPIAUCSL',
                                     window_size = 100,
                                     handle_missing=0 )
-                                    
+
 # Neural Network, we can use lag from ar model as ideal lags
 model_nnet  = Neural_Network( data = data,
                         max_iter = 100,
@@ -191,24 +191,24 @@ model_nnet  = Neural_Network( data = data,
                         window_size = 100,
                         handle_missing=0 )
 ```
-We also give an option to include PCA features instead of all the data_features for regularised regression and neural network models, and can run AR+PCR model as well. 
-Here is an example to run the AR+PCR model : 
+We also give an option to include PCA features instead of all the data_features for regularised regression and neural network models, and can run AR+PCR model as well.
+Here is an example to run the AR+PCR model :
 ```python
-model_ar_pcr = AR_Model(data = y, 
+model_ar_pcr = AR_Model(data = y,
                    max_lag = 50,
                    start_date = pd.to_datetime('2000-01'),
                    end_date = pd.to_datetime('2021-11'),
                    dependent_variable_name = 'CPIAUCSL',
                    window_size = 100,
                    use_pca_features = True,
-                   fred_factors_kwargs = { 'standardization':2, 
-                                        'factorselection':{1:90}, 
-                                        'removeoutliers':True, 
+                   fred_factors_kwargs = { 'standardization':2,
+                                        'factorselection':{1:90},
+                                        'removeoutliers':True,
                                         'maxfactors':None},
                     model_lags = model_ar.lag_from_ar_model)
  ```
-Similarly, for any other model, including the last 3 parameters above would include the PCA features to the model. 
-                 
+Similarly, for any other model, including the last 3 parameters above would include the PCA features to the model.
+
 Step 3: Fit the model and obtain outputs
 ```python
 model.fit()
