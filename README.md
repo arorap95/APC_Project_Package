@@ -158,9 +158,10 @@ Neural Network : class Neural_Network
 
 Below I provide examples to instantiate each of these classes with some dummy parameter values
 ```python
-model = AR_Model( data = data,
-                  max_lag = 100,
-                  start_date = pd.to_datetime('2010-01'),
+#AR_model 
+model_ar = AR_Model( data = data,
+                  max_lag = 50,
+                  start_date = pd.to_datetime('2000-01'),
                   end_date = pd.to_datetime('2020-01'),
                   dependent_variable_name = 'CPIAUCSL',
                   window_size = 100,
@@ -168,29 +169,46 @@ model = AR_Model( data = data,
                   model_name="AR",
                   handle_missing=0 )
 
-
-model = Regularised_Regression_Model( data = data,
+# Regularised regression, we can use lag from ar model as ideal lags
+model_reg = Regularised_Regression_Model( data = data,
                                     regularisation_type = 'Lasso',
-                                    model_lags = [2]*120,
-                                    start_date = pd.to_datetime('2010-01'),
+                                    model_lags = model_ar.lag_from_ar_model,
+                                    start_date = pd.to_datetime('2000-01'),
                                     end_date = pd.to_datetime('2020-01'),
                                     dependent_variable_name = 'CPIAUCSL',
                                     window_size = 100,
                                     handle_missing=0 )
-
-model = Neural_Network( data = data,
+                                    
+# Neural Network, we can use lag from ar model as ideal lags
+model_nnet  = Neural_Network( data = data,
                         max_iter = 100,
-                        start_date = pd.to_datetime('2010-01'),
+                        start_date = pd.to_datetime('2000-01'),
                         end_date = pd.to_datetime('2020-01'),
                         dependent_variable_name = 'CPIAUCSL',
                         hidden_layer_sizes = (50,20,30),
                         activation = "relu",
-                        model_lags = [2]*120,
+                        model_lags = model_ar.lag_from_ar_model,
                         window_size = 100,
                         handle_missing=0 )
-
 ```
-
+We also give an option to include PCA features instead of all the data_features for regularised regression and neural network models, and can run AR+PCR model as well. 
+Here is an example to run the AR+PCR model : 
+```python
+model_ar_pcr = AR_Model(data = y, 
+                   max_lag = 50,
+                   start_date = pd.to_datetime('2000-01'),
+                   end_date = pd.to_datetime('2021-11'),
+                   dependent_variable_name = 'CPIAUCSL',
+                   window_size = 100,
+                   use_pca_features = True,
+                   fred_factors_kwargs = { 'standardization':2, 
+                                        'factorselection':{1:90}, 
+                                        'removeoutliers':True, 
+                                        'maxfactors':None},
+                    model_lags = model_ar.lag_from_ar_model)
+ ```
+Similarly, for any other model, including the last 3 parameters above would include the PCA features to the model. 
+                 
 Step 3: Fit the model and obtain outputs
 ```python
 model.fit()
