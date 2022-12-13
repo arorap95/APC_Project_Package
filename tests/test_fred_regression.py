@@ -47,6 +47,51 @@ def create_input(use_Fred_data=False, test_missing=False):
     return df
 
 
+def get_params_fit(model_name):
+
+    df = create_input(use_Fred_data=True)
+    start = pd.to_datetime("2010-03")
+    end = pd.to_datetime("2011-03")
+    nMonths = round((end - start) / np.timedelta64(1, "M"))
+    lag = 4
+    ncols = len(df.axes[1])
+    if model_name == "AR":
+        param1 = {
+            "dependent_variable_name": "CPIAUCSL",
+            "data": df,
+            "start_date": start,
+            "end_date": end,
+            "window_size": 100,
+            "max_lag": 5,
+            "model_lags": None,
+        }
+    elif model_name == "reg_regression" or model_name == "nnet":
+
+        param1 = {
+            "dependent_variable_name": "CPIAUCSL",
+            "data": df,
+            "start_date": start,
+            "end_date": end,
+            "window_size": 100,
+            "model_lags": [lag] * nMonths,
+        }
+
+    param2 = param1
+    param2.update(
+        {
+            "use_pca_features": True,
+            "fred_factors_kwargs": {
+                "standardization": 2,
+                "factorselection": {1: 90},
+                "removeoutliers": True,
+                "maxfactors": None,
+            },
+            "model_lags": [lag] * nMonths,
+        }
+    )
+    return param1, param2, ncols, lag, nMonths
+
+
 class test_Fred_Regression(unittest.TestCase):
     def c(
         self,
@@ -72,11 +117,9 @@ class test_Fred_Regression(unittest.TestCase):
             model_name=model_name,
         )
 
-    def test_features_and_target(self):
-        df = create_input()
-        model = self.c(dependent_variable_name="result", data=df)
-
-        model.features_and_target()
+    def test__features_and_target(self):
+        model = self.c()
+        model._features_and_target()
 
         self.assertEqual(len(model.target), 6)
         self.assertEqual(len(model.features.axes[1]), 2)
@@ -85,6 +128,29 @@ class test_Fred_Regression(unittest.TestCase):
         model = self.c()
         err = model.get_error(np.array([1, 2]), np.array([0, 1]))
         self.assertEqual(err, 1)
+
+    @parameterized.expand([["0", True], ["1", False]])
+    def test__create_lagged_data(self, name, is_series):
+        model = self.c()
+        lag = 4
+        out = model._create_lagged_data(model.data, lag, is_series)
+        if not is_series:
+            self.assertEqual(
+                out.shape, (len(model.data), len(model.data.columns) * lag)
+            )
+        else:
+            self.assertEqual(out.shape, (len(model.data.columns), len(model.data), lag))
+
+    def test__lagged_features_and_target(self):
+        model = self.c()
+        model._features_and_target()
+        lag = 4
+        feature_cols = len(model.data.columns) - 1
+        rows = len(model.data[lag:])
+        model._lagged_features_and_target(model.target, model.features, lag)
+        self.assertEqual(model.lag_features.shape, (rows, lag))
+        self.assertEqual(model.data_features.shape, (rows, lag * feature_cols))
+        self.assertEqual(model.curr_features.shape, (rows, lag + lag * feature_cols))
 
     @parameterized.expand([["0", 0], ["1", 1]])
     def test_handle_missing(self, name, val):
@@ -110,6 +176,9 @@ class test_AR_Model(unittest.TestCase):
         dependent_variable_name="please_define",
         window_size=2,
         handle_missing=0,
+        model_lags=None,
+        use_pca_features: bool = False,
+        fred_factors_kwargs: dict = None,
     ):
 
         AR_model = fred_regression.AR_Model
@@ -122,6 +191,9 @@ class test_AR_Model(unittest.TestCase):
             dependent_variable_name=dependent_variable_name,
             window_size=window_size,
             handle_missing=handle_missing,
+            use_pca_features=use_pca_features,
+            fred_factors_kwargs=fred_factors_kwargs,
+            model_lags=model_lags,
         )
 
     def test_class_initialisation(self):
@@ -142,20 +214,14 @@ class test_AR_Model(unittest.TestCase):
         self.assertEqual(model.handle_missing, 0)
         self.assertEqual(model.max_lag, 3)
 
-    def test_fit(self):
-        df = create_input(use_Fred_data=True)
-        start = pd.to_datetime("2010-03")
-        end = pd.to_datetime("2011-03")
-        model = self.c(
-            dependent_variable_name="CPIAUCSL",
-            data=df,
-            start_date=start,
-            end_date=end,
-            max_lag=5,
-            window_size=100,
-        )
+    param1, param2, _, _, _ = get_params_fit(model_name="AR")
+
+    @parameterized.expand([["not_pca0", param1]])
+    def test_fit(self, name, params):
+        _, _, ncols, lag, nMonths = get_params_fit(model_name="AR")
+        model = self.c(**params)
         model.fit()
-        nMonths = round((end - start) / np.timedelta64(1, "M"))
+
         self.assertEqual(len(model.in_sample_error), nMonths)
         self.assertEqual(len(model.out_of_sample_error), nMonths)
         self.assertEqual(len(model.lag_from_ar_model), nMonths)
@@ -175,7 +241,9 @@ class test_Regularised_Regression_Model(unittest.TestCase):
         window_size=2,
         handle_missing=0,
         lambdas=[0.01],
-        model_lags=[1, 2],
+        model_lags=[2] * 4,
+        use_pca_features: bool = False,
+        fred_factors_kwargs: dict = None,
     ):
 
         Regularised_Regression_Model = fred_regression.Regularised_Regression_Model
@@ -200,6 +268,7 @@ class test_Regularised_Regression_Model(unittest.TestCase):
             start_date=pd.to_datetime("2010-01"),
             end_date=pd.to_datetime("2010-06"),
             dependent_variable_name="result",
+            model_lags=[2] * 5,
             regularisation_type=reg_type,
         )
 
@@ -209,26 +278,22 @@ class test_Regularised_Regression_Model(unittest.TestCase):
         self.assertEqual(model.window_size, 2)
         self.assertEqual(model.handle_missing, 0)
         self.assertEqual(model.regularisation_type, reg_type)
-        self.assertEqual(len(model.model_lags), 2)
         self.assertEqual(len(model.lambdas), 1)
 
-    @parameterized.expand([["ridge", "Ridge"], ["lasso", "Lasso"]])
-    def test_fit(self, name, reg_type):
-        df = create_input(use_Fred_data=True)
-        start = pd.to_datetime("2010-03")
-        end = pd.to_datetime("2011-03")
-        nMonths = round((end - start) / np.timedelta64(1, "M"))
-        lag = 4
-        ncols = len(df.axes[1])
-        model = self.c(
-            dependent_variable_name="CPIAUCSL",
-            data=df,
-            start_date=start,
-            end_date=end,
-            window_size=100,
-            regularisation_type=reg_type,
-            model_lags=[lag] * nMonths,
-        )
+    param1, param2, _, _, _ = get_params_fit(model_name="reg_regression")
+
+    @parameterized.expand(
+        [
+            ["not_pca0", "Ridge", param1],
+            ["not_pca1", "Lasso", param1],
+            ["pca0", "Ridge", param2],
+            ["pca1", "Lasso", param2],
+        ]
+    )
+    def test_fit(self, name, reg_type, params):
+        _, _, ncols, lag, nMonths = get_params_fit(model_name="reg_regression")
+        params.update({"regularisation_type": reg_type})
+        model = self.c(**params)
         model.fit()
 
         self.assertEqual(len(model.in_sample_error), nMonths)
@@ -252,7 +317,9 @@ class test_Neural_Network(unittest.TestCase):
         max_iter="please_specify",
         window_size=2,
         handle_missing=0,
-        model_lags=[1, 2],
+        model_lags=[2] * 4,
+        use_pca_features: bool = False,
+        fred_factors_kwargs: dict = None,
     ):
 
         nnet = fred_regression.Neural_Network
@@ -280,6 +347,7 @@ class test_Neural_Network(unittest.TestCase):
             dependent_variable_name="result",
             activation=activation,
             hidden_layer_sizes=(1, 2),
+            model_lags=[2] * 5,
             max_iter=max_iter,
         )
 
@@ -292,25 +360,26 @@ class test_Neural_Network(unittest.TestCase):
         self.assertEqual(model.max_iter, max_iter)
         self.assertEqual(len(model.hidden_layer_sizes), 2)
 
-    @parameterized.expand([["0", "relu", 100, (10, 4)], ["1", "logistic", 150, (4, 3)]])
-    def test_fit(self, name, activation, max_iter, hidden):
-        df = create_input(use_Fred_data=True)
-        start = pd.to_datetime("2010-03")
-        end = pd.to_datetime("2011-03")
-        nMonths = round((end - start) / np.timedelta64(1, "M"))
-        lag = 4
-        ncols = len(df.axes[1])
-        model = self.c(
-            dependent_variable_name="CPIAUCSL",
-            data=df,
-            start_date=start,
-            end_date=end,
-            window_size=100,
-            activation=activation,
-            hidden_layer_sizes=hidden,
-            max_iter=max_iter,
-            model_lags=[lag] * nMonths,
+    param1, param2, _, _, _ = get_params_fit(model_name="nnet")
+
+    @parameterized.expand(
+        [
+            ["not_pca0", "relu", 100, (10, 4), param1],
+            ["not_pca1", "logistic", 150, (4, 3), param1],
+            ["pca0", "relu", 100, (10, 4), param2],
+            ["pca1", "logistic", 150, (4, 3), param2],
+        ]
+    )
+    def test_fit(self, name, activation, max_iter, hidden, params):
+        _, _, ncols, lag, nMonths = get_params_fit(model_name="nnet")
+        params.update(
+            {
+                "hidden_layer_sizes": hidden,
+                "max_iter": max_iter,
+                "activation": activation,
+            }
         )
+        model = self.c(**params)
         model.fit()
 
         self.assertEqual(len(model.in_sample_error), nMonths)
