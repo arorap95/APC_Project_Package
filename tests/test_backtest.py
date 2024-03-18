@@ -27,6 +27,7 @@ def create_input():
 
 df = create_input()
 
+
 # create fixture that generates instance of the Backtest class
 @pytest.fixture
 def c():

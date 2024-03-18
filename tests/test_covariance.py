@@ -28,6 +28,7 @@ def create_input():
 
 df = create_input()
 
+
 # create fixture that generates instance of the Covariance class
 @pytest.fixture
 def c():
