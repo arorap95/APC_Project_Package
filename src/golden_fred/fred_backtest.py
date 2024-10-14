@@ -82,7 +82,6 @@ class FredBacktest:
     def fred_compute_backtest(
         self, factors: np.array, initialweights: np.array, Tcosts: np.array
     ) -> pd.Series:
-
         """
         Wrapper function called by the user to run a historical backtest on a portfolio of FRED factors with weights and T costs provided by the user. Reports all backtest statistics
 
@@ -129,7 +128,6 @@ class FredBacktest:
     def regime_filtering(
         self, columns: np.array, lambda_param: np.array = None
     ) -> pd.DataFrame:
-
         """
         Wrapper function called by the user to run a L1 trend filtering algorithm on each column of data. Reports historical regimes of contraction, expansion and transition
 
@@ -167,7 +165,8 @@ class FredBacktest:
     def _is_rebal(self, date) -> bool:
         """Uses index to check whether specified date is a rebalancing date
         :param: self.rebalancing
-        return: boolean indicating whether the index corresponds to a rebalancing trigger"""
+        return: boolean indicating whether the index corresponds to a rebalancing trigger
+        """
 
         if self.rebalancing == "monthly":
             return True
