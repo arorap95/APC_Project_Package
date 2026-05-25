@@ -381,11 +381,9 @@ class GetFred:
         if self.vintage == "current":
             pass
         else:
-            warnings.warn(
-                f"""It is advised to use the default vintage: current.
+            warnings.warn(f"""It is advised to use the default vintage: current.
                           If requesting a historical vintage, use format YYYY-MM.
-                          Oldest vintage is 2015-01."""
-            )
+                          Oldest vintage is 2015-01.""")
             if "-" not in self.vintage:
                 raise Exception(
                     f"Incorrect vintage format: {self.vintage}. Correct format: YYYY-MM"

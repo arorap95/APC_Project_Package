@@ -38,7 +38,6 @@ class FredRegression:
         fred_factors_kwargs: dict = None,
         model_lags: Optional[List[int]] = None,
     ):
-
         """
         :param data       : input time series dataframe, must contain a column with the user input value of
         dependent_variable_name. Data should have minimum [start_date - window_size to end_date] rows
