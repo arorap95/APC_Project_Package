@@ -19,7 +19,6 @@ class FredFactors:
         removeoutliers: bool = False,
         handle_missing: int = 1,
     ):
-
         """
         Run Principal Component Analysis (PCA) on input data set and conduct factor analysis
 
