@@ -10,7 +10,6 @@ class CovarianceFred:
         self,
         data: pd.DataFrame,
     ):
-
         """Compute the covariance matrix of FRED data with options for various techniques available. Covariance matrices may be used as inputs for other data analysis.
         :param: FRED-MD data
 
